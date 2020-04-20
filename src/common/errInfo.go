@@ -313,6 +313,8 @@ const (
 	// create instance association, but two instances are already associated
 	CCErrorAssociationBetweenTwoInstacneAlreadyExist = 1101062
 
+	CCErrorTopoObjectInstanceObjIDFieldConflictWithURL = 1101093
+
 	CCErrTopoAppDeleteFailed                       = 1001031
 	CCErrTopoAppUpdateFailed                       = 1001032
 	CCErrTopoAppSearchFailed                       = 1001033

@@ -84,7 +84,6 @@ func (c *commonInst) SetProxy(modelFactory model.Factory, instFactory inst.Facto
 }
 
 func (c *commonInst) CreateInstBatch(params types.ContextParams, obj model.Object, batchInfo *InstBatchInfo) (*BatchResult, error) {
-
 	results := &BatchResult{}
 	if batchInfo.InputType != common.InputTypeExcel {
 		return results, fmt.Errorf("unexpected input_type: %s", batchInfo.InputType)
@@ -93,68 +92,81 @@ func (c *commonInst) CreateInstBatch(params types.ContextParams, obj model.Objec
 		return results, fmt.Errorf("BatchInfo empty")
 	}
 
-	data := *batchInfo.BatchInfo
-	if obj.GetIsPaused() {
-		return results, fmt.Errorf("model id = %s have been stopped to use", obj.GetID())
-	}
-	count := 0
-	// all the instances's name should not be same,
-	// so we need to check first.
-	instNameMap := make(map[string]struct{})
+	// 1. 检查实例与URL参数指定的模型一致
 	for line, inst := range *batchInfo.BatchInfo {
-		if inst == nil {
-			// this is a empty excel line.
+		objID, exist := inst[common.BKObjIDField]
+		if exist == true && objID != obj.GetID() {
+			blog.Errorf("create object[%s] instance batch failed, because bk_obj_id field conflict with url field", objID)
+			return nil, params.Err.Errorf(common.CCErrorTopoObjectInstanceObjIDFieldConflictWithURL, line)
+		}
+	}
+
+	updatedInstanceIDs := make([]int64, 0)
+	createdInstanceIDs := make([]int64, 0)
+	idFieldname := metatype.GetInstIDFieldByObjID(obj.GetID())
+	for colIdx, colInput := range *batchInfo.BatchInfo {
+		if colInput == nil {
+			// ignore empty excel line
 			continue
 		}
-		delete(inst, "import_from")
 
-		iName, exist := inst[common.BKInstNameField]
-		if !exist {
-			blog.Errorf("create object[%s] instance batch failed, because missing bk_inst_name field.", obj.GetID())
-			return nil, params.Err.Errorf(common.CCErrorTopoObjectInstanceMissingInstanceNameField, line)
-		}
-
-		name, can := iName.(string)
-		if !can {
-			blog.Errorf("create object[%s] instance batch failed, because  bk_inst_name value type is not string.", obj.GetID())
-			return nil, params.Err.Errorf(common.CCErrorTopoInvalidObjectInstanceNameFieldValue, line)
-		}
-
-		// check if this instance name is already exist.
-		if _, ok := instNameMap[name]; ok {
-			blog.Errorf("create object[%s] instance batch, but bk_inst_name %s is duplicated.", obj.GetID(), name)
-			return nil, params.Err.Errorf(common.CCErrorTopoMutipleObjectInstanceName, name)
-		}
-
-		instNameMap[name] = struct{}{}
-		count++
-
+		delete(colInput, "import_from")
+		// create memory object
 		item := c.instFactory.CreateInst(params, obj)
-		item.SetValues(inst)
 
-		if item.GetValues().Exists(obj.GetInstIDFieldName()) {
-			// check update
-			targetInstID, err := item.GetInstID()
+		item.SetValues(colInput)
+
+		// 实例id 为空，表示要新建实例
+		// 实例ID已经赋值，更新数据.  (已经赋值, value not equal 0 or nil)
+
+		// 是否存在实例ID字段
+		instID, existInstID := colInput[idFieldname]
+		// 实例ID字段是否设置值
+		if existInstID && (instID == "" || instID == nil) {
+			existInstID = false
+		}
+		if existInstID {
+			delete(colInput, idFieldname)
+			filter := condition.CreateCondition()
+			filter = filter.Field(idFieldname).Eq(instID)
+
+			err := item.Update(colInput)
 			if nil != err {
-				blog.Errorf("[operation-inst] failed to get inst id, err: %s", err.Error())
-				results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", line, err.Error()))
+				blog.Errorf("[operation-inst] failed to update the object(%s) inst data (%#v), err: %s", obj.GetID(), colInput, err.Error())
+				results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
 				continue
 			}
-			inst[obj.GetInstIDFieldName()] = targetInstID
+			instID, err := item.GetInstID()
+			if err != nil {
+				blog.ErrorJSON("update inst success, but get id field failed, inst: %s, err: %s", item.GetValues(), err.Error())
+				results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
+				continue
+			}
+			updatedInstanceIDs = append(updatedInstanceIDs, instID)
+			results.Success = append(results.Success, strconv.FormatInt(colIdx, 10))
+			continue
 		}
-	}
-	if count > 200 {
-		return results, fmt.Errorf("BatchInfo len exceeds 200")
+
+		// set data
+		// call CoreService.CreateInstance
+		err := item.Create()
+		if nil != err {
+			blog.Errorf("[operation-inst] failed to save the object(%s) inst data (%#v), err: %s", obj.GetID(), colInput, err.Error())
+			results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
+			continue
+		}
+		results.Success = append(results.Success, strconv.FormatInt(colIdx, 10))
+
+		instanceID, err := item.GetInstID()
+		if err != nil {
+			blog.Errorf("unexpected error, instances created success, but get id failed, err: %+v", err)
+			continue
+		}
+		createdInstanceIDs = append(createdInstanceIDs, instanceID)
 	}
 
-	rsp, err := c.clientSet.ObjectController().Instance().CreateObjects(context.Background(), obj.GetID(), params.Header, data)
-	if nil != err {
-		blog.Errorf("[operation-inst] failed to request the object controller , error info is %s", err.Error())
-		return results, params.Err.Errorf(common.CCErrCommHTTPDoRequestFailed, err)
-	}
-	results.Success = append(results.Success, rsp.Success...)
-	results.Errors = append(results.Errors, rsp.Errors...)
-	results.UpdateErrors = append(results.UpdateErrors, rsp.UpdateErrors...)
+	//results.SuccessCreated = createdInstanceIDs
+	//results.SuccessUpdated = updatedInstanceIDs
 
 	return results, nil
 }
