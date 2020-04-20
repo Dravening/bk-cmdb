@@ -130,7 +130,7 @@ func (c *commonInst) CreateInstBatch(params types.ContextParams, obj model.Objec
 			filter := condition.CreateCondition()
 			filter = filter.Field(idFieldname).Eq(instID)
 
-			err := item.Update(colInput)
+			err := item.UpdateInstance(filter, colInput)
 			if nil != err {
 				blog.Errorf("[operation-inst] failed to update the object(%s) inst data (%#v), err: %s", obj.GetID(), colInput, err.Error())
 				results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))

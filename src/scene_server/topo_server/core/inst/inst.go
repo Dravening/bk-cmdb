@@ -60,6 +60,8 @@ type Inst interface {
 	ToMapStr() frtypes.MapStr
 
 	IsDefault() bool
+
+	UpdateInstance(filter condition.Condition, data mapstr.MapStr) error
 }
 
 var _ Inst = (*inst)(nil)
@@ -212,6 +214,41 @@ func (cli *inst) Update(data frtypes.MapStr) error {
 		return err
 	}
 
+	for _, item := range instItems { // should be only one item
+		cli.datas = item.GetValues()
+	}
+
+	return nil
+}
+
+func (cli *inst) UpdateInstance(filter condition.Condition, data mapstr.MapStr) error {
+	// not allowed to update these fields, need to use specialized function
+	data.Remove(common.BKAppIDField)
+	data.Remove(metatype.BKMetadata)
+	objID := cli.target.GetID()
+	if cli.target.GetIsPaused() {
+		return cli.params.Err.Error(common.CCErrCommHTTPDoRequestFailed)
+	}
+
+	// execute update action
+	cond := condition.CreateCondition()
+	updateCond := frtypes.MapStr{}
+	updateCond.Set("data", data)
+	updateCond.Set("condition", cond.ToMapStr())
+	_, err := cli.clientSet.ObjectController().Instance().UpdateObject(context.Background(), cli.target.GetObjectType(), cli.params.Header, updateCond)
+	if nil != err {
+		blog.Errorf("failed to update object(%s)'s instances, err: %s", objID, err)
+		return cli.params.Err.Error(common.CCErrCommHTTPDoRequestFailed)
+	}
+
+	// read the updated data
+	instItems, err := cli.searchInsts(cli.target, filter)
+	if nil != err {
+		blog.ErrorJSON("[inst-inst] failed to search updated data, cond: %s, err: %s", filter.ToMapStr(), err)
+		return err
+	}
+
+	// TODO: 这种实现方案非常不安全
 	for _, item := range instItems { // should be only one item
 		cli.datas = item.GetValues()
 	}
