@@ -185,6 +185,7 @@ func (m *user) GetUserList(c *gin.Context, config map[string]string) ([]*metadat
 			blog.Warnf("get users by esb client failed, http failed, err: %+v, rid: %s", err, rid)
 			return nil, fmt.Errorf("get users by esb client failed, http failed")
 		}
+		blog.Errorf("111111111111111111111111111GetAllUsers", time.Now())
 		users := make([]*metadata.LoginSystemUserInfo, 0)
 		for _, userInfo := range result.Data {
 			user := &metadata.LoginSystemUserInfo{
@@ -210,6 +211,7 @@ func (m *user) GetUserList(c *gin.Context, config map[string]string) ([]*metadat
 		return adminData, nil
 	}
 
+	blog.Errorf("2222222222222222222222222222222222222skipLogin", time.Now())
 	token := session.Get(common.HTTPCookieBKToken)
 	getURL := fmt.Sprintf(accountURL, token)
 	httpClient := httpclient.NewHttpClient()
@@ -218,7 +220,7 @@ func (m *user) GetUserList(c *gin.Context, config map[string]string) ([]*metadat
 		blog.Warnf("httpClient.SetTlsNoVerity failed, err: %s, rid: %s", err.Error(), rid)
 	}
 	reply, err := httpClient.GET(getURL, nil, nil)
-
+	blog.Errorf("333333333333333333333333333333333333333getReply", time.Now())
 	if nil != err {
 		blog.Errorf("get user list error：%v, rid: %s", err, rid)
 		return nil, fmt.Errorf("http do error:%s", err.Error())
@@ -230,6 +232,7 @@ func (m *user) GetUserList(c *gin.Context, config map[string]string) ([]*metadat
 		blog.Errorf("get user list error：%v, error code:%s, error message: %s, rid: %s", err, result.Code, result.Message, rid)
 		return nil, fmt.Errorf("get user list reply error")
 	}
+	blog.Errorf("44444444444444444444444444444444444444444unmarshal", time.Now())
 	userListArr := make([]*metadata.LoginSystemUserInfo, 0)
 	for _, user := range result.Data {
 		cellData := make(map[string]interface{})
