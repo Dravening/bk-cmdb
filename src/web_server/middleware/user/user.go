@@ -14,6 +14,7 @@ package user
 
 import (
 	"plugin"
+	"time"
 
 	"configcenter/src/common/backbone"
 	"configcenter/src/web_server/app/options"
@@ -24,7 +25,7 @@ import (
 
 type User interface {
 	LoginUser(c *gin.Context) (isLogin bool)
-	GetUserList(c *gin.Context) (int, interface{})
+	GetUserList(c *gin.Context) (int, interface{}, []time.Time)
 	GetLoginUrl(c *gin.Context) string
 }
 

@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"plugin"
 	"strconv"
+	"time"
 
 	"configcenter/src/common"
 	"configcenter/src/common/backbone"
@@ -107,7 +108,9 @@ func (m *publicUser) LoginUser(c *gin.Context) bool {
 }
 
 // GetUserList get user list from PaaS
-func (m *publicUser) GetUserList(c *gin.Context) (int, interface{}) {
+func (m *publicUser) GetUserList(c *gin.Context) (int, interface{}, []time.Time) {
+	//1111111111111111111111111111111111111
+	timeList := []time.Time{time.Now()}
 	rid := util.GetHTTPCCRequestID(c.Request.Header)
 	var err error
 	var userList []*metadata.LoginSystemUserInfo
@@ -117,13 +120,15 @@ func (m *publicUser) GetUserList(c *gin.Context) (int, interface{}) {
 	if nil == m.loginPlg {
 		user := plugins.CurrentPlugin(c, m.config.LoginVersion)
 		userList, err = user.GetUserList(c, m.config.ConfigMap)
+		//22222222222222222222222222222222222222222222222
+		timeList = append(timeList, time.Now())
 	} else {
 		getUserListFunc, err := m.loginPlg.Lookup("GetUserList")
 		if nil != err {
 			blog.Error("GetUserList interface not implemented, rid: %s", rid)
 			rspBody.Code = common.CCErrCommHTTPDoRequestFailed
 			rspBody.ErrMsg = err.Error()
-			return http.StatusInternalServerError, rspBody
+			return http.StatusInternalServerError, rspBody, timeList
 
 		}
 		userList, err = getUserListFunc.(func(c *gin.Context, config map[string]string) ([]*metadata.LoginSystemUserInfo, error))(c, m.config.ConfigMap)
@@ -137,7 +142,8 @@ func (m *publicUser) GetUserList(c *gin.Context) (int, interface{}) {
 	}
 	rspBody.Result = true
 	rspBody.Data = userList
-	return httpStatus, rspBody
+	timeList = append(timeList, time.Now())
+	return httpStatus, rspBody, timeList
 }
 
 func (m *publicUser) GetLoginUrl(c *gin.Context) string {

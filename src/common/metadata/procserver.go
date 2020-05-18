@@ -245,7 +245,7 @@ type UserInfo struct {
 	DisplayName string `json:"display_name"`
 	Language    string `json:"language"`
 	StaffStatus string `json:"staff_status"`
-	BkUsername  string `json:"bk_username"`
+	BkUsername  string `json:"username"`
 	Telephone   string `json:"telephone"`
 	BkRole      int    `json:"bk_role"`
 	TimeZone    string `json:"time_zone"`

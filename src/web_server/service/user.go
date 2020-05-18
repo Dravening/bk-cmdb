@@ -58,8 +58,10 @@ var getUserFailData = userDataResult{
 // GetUserList get user list
 func (s *Service) GetUserList(c *gin.Context) {
 	user := user.NewUser(*s.Config, s.Engine, s.CacheCli, s.VersionPlg)
-	code, data := user.GetUserList(c)
+	code, data, timeList := user.GetUserList(c)
+	blog.Errorf("qqqqqqqqqqqqqqqqqqqqq_user.62", timeList)
 	c.JSON(code, data)
+	blog.Errorf("wwwwwwwwwwwwwwwwwwwwww_user.64", time.Now())
 	return
 }
 

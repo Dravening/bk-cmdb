@@ -21,13 +21,16 @@ import (
 
 func (p *user) GetAllUsers(ctx context.Context, h http.Header) (resp *metadata.EsbUserListResponse, err error) {
 	resp = &metadata.EsbUserListResponse{}
-	subPath := "/v2/usermanage/get_all_users/"
+	subPath := "/v2/usermanage/list_users/"
 	h.Set("Accept", "application/json")
+	params := esbutil.GetEsbQueryParameters(p.config.GetConfig(), h)
+	params["no_page"] = "true"
+	params["fields"] = "username,display_name"
 
 	err = p.client.Get().
 		WithContext(ctx).
 		SubResource(subPath).
-		WithParams(esbutil.GetEsbQueryParameters(p.config.GetConfig(), h)).
+		WithParams(params).
 		WithHeaders(h).
 		Do().
 		Into(resp)
