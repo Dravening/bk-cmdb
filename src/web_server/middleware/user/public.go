@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"plugin"
 	"strconv"
+	"strings"
 
 	"configcenter/src/common"
 	"configcenter/src/common/backbone"
@@ -114,9 +115,14 @@ func (m *publicUser) GetUserList(c *gin.Context) (int, interface{}) {
 	rspBody := metadata.LonginSystemUserListResult{}
 	rspBody.Result = true
 	httpStatus := http.StatusOK
+	query := c.Request.URL.Query()
+	params := make(map[string]string)
+	for key, values := range query {
+		params[key] = strings.Join(values, ";")
+	}
 	if nil == m.loginPlg {
 		user := plugins.CurrentPlugin(c, m.config.LoginVersion)
-		userList, err = user.GetUserList(c, m.config.ConfigMap)
+		userList, err = user.GetUserList(c, m.config.ConfigMap, params)
 	} else {
 		getUserListFunc, err := m.loginPlg.Lookup("GetUserList")
 		if nil != err {

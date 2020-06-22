@@ -252,9 +252,20 @@ type UserInfo struct {
 	Email       string `json:"email"`
 }
 
+type ListUserItem struct {
+	ID          int64  `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+}
+
 type EsbUserListResponse struct {
 	EsbBaseResponse `json:",inline"`
 	Data            []UserInfo `json:"data"`
+}
+
+type EsbListUserResponse struct {
+	EsbBaseResponse `json:",inline"`
+	Data            []ListUserItem `json:"data"`
 }
 
 type EsbBaseResponse struct {

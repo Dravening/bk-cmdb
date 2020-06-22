@@ -34,3 +34,66 @@ func (p *user) GetAllUsers(ctx context.Context, h http.Header) (resp *metadata.E
 
 	return
 }
+
+func (p *user) ListUsers(ctx context.Context, h http.Header, params map[string]string) (resp *metadata.EsbListUserResponse, err error) {
+	// response demo
+	/*
+		{
+		  "status": "NORMAL",
+		  "domain": "default.local",
+		  "code": null,
+		  "telephone": "11111111111",
+		  "create_time": "2019-12-11T19:45:21.518283Z",
+		  "country_code": "86",
+		  "iso_code": "CN",
+		  "logo": null,
+		  "id": 22222,
+		  "display_name": "foo",
+		  "role": 0,
+		  "type": "",
+		  "leader": [],
+		  "username": "foo",
+		  "update_time": "2019-12-11T19:50:07.903422Z",
+		  "wx_userid": "",
+		  "staff_status": "IN",
+		  "position": 0,
+		  "qq": "",
+		  "language": "zh-cn",
+		  "enabled": true,
+		  "time_zone": "Asia/Shanghai",
+		  "departments": [
+			{
+			  "order": 1,
+			  "id": 22222,
+			  "full_name": "总公司",
+			  "name": "总公司"
+			}
+		  ],
+		  "email": "foo@qq.com",
+		  "extras": [],
+		  "wx_openid": "",
+		  "password_valid_days": 180,
+		  "category_id": 1
+		}
+	*/
+	resp = &metadata.EsbListUserResponse{}
+	h.Set("Accept", "application/json")
+
+	if params == nil {
+		params = make(map[string]string)
+	}
+	if _, ok := params["fields"]; ok == false {
+		params["fields"] = "username,id,display_name"
+	}
+	params["no_page"] = "true"
+	err = p.client.Get().
+		WithContext(ctx).
+		WithParams(params).
+		SubResourcef("/v2/usermanage/list_users/").
+		WithParams(esbutil.GetEsbQueryParameters(p.config.GetConfig(), h)).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+
+	return
+}
