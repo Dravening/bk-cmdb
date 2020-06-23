@@ -341,7 +341,7 @@
                 const objId = selectedNode['bk_obj_id']
                 const instId = selectedNode['bk_inst_id']
                 const requestParams = {
-                    page: {start: 0, limit: 1},
+                    page: { start: 0, limit: 1 },
                     fields: [],
                     condition: {}
                 }
@@ -639,7 +639,7 @@
                 return promise
             },
             updateNode (value) {
-                const formData = {...value}
+                const formData = { ...value }
                 const selectedNode = this.tree.selectedNode
                 const objId = selectedNode['bk_obj_id']
                 let promise
@@ -693,7 +693,7 @@
                 const selectedNode = this.tree.selectedNode
                 const parentNode = this.tree.selectedNodeState.parent.node
                 const objId = selectedNode['bk_obj_id']
-                const config = {requestId: 'deleteNode'}
+                const config = { requestId: 'deleteNode' }
                 this.$bkInfo({
                     title: `${this.$t('Common["确定删除"]')} ${selectedNode['bk_inst_name']}?`,
                     content: objId === 'module'
