@@ -78,6 +78,7 @@ const (
 const (
 	CCConfigureRedis  = "redis"
 	CCConfigureMongo  = "mongodb"
+	CCConfigureNeo4j  = "neo4j"
 	CCConfigureCommon = "common"
 	CCConfigureExtra  = "extra"
 )

@@ -42,6 +42,7 @@ import (
 	watchEvent "configcenter/src/source_controller/coreservice/event"
 	"configcenter/src/storage/dal"
 	"configcenter/src/storage/dal/mongo/local"
+	"configcenter/src/storage/dal/neo4j"
 	dalredis "configcenter/src/storage/dal/redis"
 	"configcenter/src/storage/reflector"
 	"configcenter/src/storage/stream"
@@ -71,6 +72,7 @@ type coreService struct {
 	core        core.Core
 	db          dal.RDB
 	rds         *redis.Client
+	neo4j       *neo4j.Neo4j
 	cacheSet    *cache.ClientSet
 }
 
@@ -107,12 +109,19 @@ func (s *coreService) SetConfig(cfg options.Config, engine *backbone.Engine, err
 		return initErr
 	}
 
+	neo4jDb, neo4jErr := neo4j.NewNeo4j(cfg.Neo4j, time.Minute)
+	if neo4jErr != nil {
+		blog.Errorf("failed to connect the neo4jDB, error info is %s", neo4jErr.Error())
+		return neo4jErr
+	}
+
 	s.db = db
 	s.rds = cache
+	s.neo4j = neo4jDb
 
 	// connect the remote mongodb
-	instance := instances.New(db, s, cache, lang)
-	hostApplyRuleCore := hostapplyrule.New(db, instance)
+	instance := instances.New(db, s, cache, neo4jDb, lang)
+	hostApplyRuleCore := hostapplyrule.New(db, neo4jDb, instance)
 	s.core = core.New(
 		model.New(db, s, lang, cache),
 		instance,

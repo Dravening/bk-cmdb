@@ -17,6 +17,7 @@ import (
 	"configcenter/src/common/auth"
 	"configcenter/src/common/core/cc/config"
 	"configcenter/src/storage/dal/mongo"
+	"configcenter/src/storage/dal/neo4j"
 	"configcenter/src/storage/dal/redis"
 
 	"github.com/spf13/pflag"
@@ -46,6 +47,7 @@ func (s *ServerOption) AddFlags(fs *pflag.FlagSet) {
 
 type Config struct {
 	MongoDB       mongo.Config
+	Neo4j         neo4j.NeoConf
 	Errors        ErrorConfig
 	Language      LanguageConfig
 	Configures    ConfConfig

@@ -15,6 +15,7 @@ package options
 import (
 	"configcenter/src/common/core/cc/config"
 	"configcenter/src/storage/dal/mongo"
+	"configcenter/src/storage/dal/neo4j"
 	"configcenter/src/storage/dal/redis"
 
 	"github.com/spf13/pflag"
@@ -29,6 +30,7 @@ type ServerOption struct {
 type Config struct {
 	Mongo mongo.Config
 	Redis redis.Config
+	Neo4j neo4j.NeoConf
 }
 
 //NewServerOption create a ServerOption object

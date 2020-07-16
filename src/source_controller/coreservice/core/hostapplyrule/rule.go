@@ -13,6 +13,7 @@
 package hostapplyrule
 
 import (
+	"configcenter/src/storage/dal/neo4j"
 	"context"
 	"strconv"
 	"strings"
@@ -31,6 +32,7 @@ import (
 
 type hostApplyRule struct {
 	dbProxy    dal.RDB
+	neo4jDB    *neo4j.Neo4j
 	dependence HostApplyDependence
 }
 
@@ -38,9 +40,10 @@ type HostApplyDependence interface {
 	UpdateModelInstance(kit *rest.Kit, objID string, inputParam metadata.UpdateOption) (*metadata.UpdatedCount, error)
 }
 
-func New(dbProxy dal.RDB, dependence HostApplyDependence) core.HostApplyRuleOperation {
+func New(dbProxy dal.RDB, neo4jDB *neo4j.Neo4j, dependence HostApplyDependence) core.HostApplyRuleOperation {
 	rule := &hostApplyRule{
 		dbProxy:    dbProxy,
+		neo4jDB:    neo4jDB,
 		dependence: dependence,
 	}
 	return rule

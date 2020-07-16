@@ -89,6 +89,10 @@ func Run(ctx context.Context, cancel context.CancelFunc, op *options.ServerOptio
 	if err != nil {
 		return err
 	}
+	coreSvr.Config.Neo4j, err = engine.WithNeo4j()
+	if err != nil {
+		return err
+	}
 
 	coreSvr.Core = engine
 	err = coreService.SetConfig(*coreSvr.Config, engine, engine.CCErr, engine.Language)

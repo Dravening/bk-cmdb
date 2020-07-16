@@ -13,6 +13,7 @@
 package app
 
 import (
+	"configcenter/src/storage/dal/neo4j"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -56,6 +57,9 @@ func Run(ctx context.Context, cancel context.CancelFunc, op *options.ServerOptio
 
 	redisConf := redis.ParseConfigFromKV("redis", config.ConfigMap)
 	process.Config.Redis = redisConf
+
+	neo4jConf := neo4j.ParseConfigFromKV("neo4j", config.ConfigMap)
+	process.Config.Neo4j = neo4jConf
 
 	process.Config.Errors.Res = config.ConfigMap["errors.res"]
 	process.Config.Language.Res = config.ConfigMap["language.res"]

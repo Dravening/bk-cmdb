@@ -138,6 +138,7 @@ func (cc *ConfCenter) writeConfs2Center(confRootPath string) error {
 	configs := []string{
 		types.CCConfigureRedis,
 		types.CCConfigureMongo,
+		types.CCConfigureNeo4j,
 		types.CCConfigureCommon,
 		types.CCConfigureExtra,
 	}

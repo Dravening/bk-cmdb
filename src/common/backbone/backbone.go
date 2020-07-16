@@ -32,6 +32,7 @@ import (
 	"configcenter/src/common/metrics"
 	"configcenter/src/common/types"
 	"configcenter/src/storage/dal/mongo"
+	"configcenter/src/storage/dal/neo4j"
 	"configcenter/src/storage/dal/redis"
 
 	"github.com/rs/xid"
@@ -326,6 +327,34 @@ func (e *Engine) WithMongo(prefixes ...string) (mongo.Config, error) {
 	}
 	mongoConf[prefix] = mongo.ParseConfigFromKV(prefix, conf.ConfigMap)
 	return mongoConf[prefix], nil
+}
+
+var (
+	neo4jConf = make(map[string]neo4j.NeoConf, 0)
+)
+
+func (e *Engine) WithNeo4j(prefixes ...string) (neo4j.NeoConf, error) {
+	var prefix string
+	if len(prefixes) == 0 {
+		prefix = "neo4j"
+	} else {
+		prefix = prefixes[0]
+	}
+	if conf, exist := neo4jConf[prefix]; exist {
+		return conf, nil
+	}
+	data, err := e.client.Client().Get(fmt.Sprintf("%s/%s", types.CC_SERVCONF_BASEPATH, types.CCConfigureNeo4j))
+	if err != nil {
+		blog.Errorf("get neo4j config failed, err: %s", err.Error())
+		return neo4j.NeoConf{}, err
+	}
+	conf, err := cc.ParseConfigWithData([]byte(data))
+	if err != nil {
+		blog.Errorf("parse neo4j config failed, err: %s, data: %s", err.Error(), data)
+		return neo4j.NeoConf{}, err
+	}
+	neo4jConf[prefix] = neo4j.ParseConfigFromKV(prefix, conf.ConfigMap)
+	return neo4jConf[prefix], nil
 }
 
 var (

@@ -25,6 +25,7 @@ import (
 	"configcenter/src/common/util"
 	"configcenter/src/source_controller/coreservice/core"
 	"configcenter/src/storage/dal"
+	"configcenter/src/storage/dal/neo4j"
 
 	redis "gopkg.in/redis.v5"
 )
@@ -33,6 +34,7 @@ var _ core.InstanceOperation = (*instanceManager)(nil)
 
 type instanceManager struct {
 	dbProxy   dal.RDB
+	neo4jDB   *neo4j.Neo4j
 	dependent OperationDependences
 	language  language.CCLanguageIf
 	Cache     *redis.Client
@@ -40,9 +42,10 @@ type instanceManager struct {
 }
 
 // New create a new instance manager instance
-func New(dbProxy dal.RDB, dependent OperationDependences, cache *redis.Client, language language.CCLanguageIf) core.InstanceOperation {
+func New(dbProxy dal.RDB, dependent OperationDependences, cache *redis.Client, neo4jDB *neo4j.Neo4j, language language.CCLanguageIf) core.InstanceOperation {
 	return &instanceManager{
 		dbProxy:   dbProxy,
+		neo4jDB:   neo4jDB,
 		dependent: dependent,
 		EventCli:  eventclient.NewClientViaRedis(cache, dbProxy),
 		language:  language,
