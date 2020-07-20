@@ -13,6 +13,7 @@
 package dal
 
 import (
+	"configcenter/src/common/mapstr"
 	"context"
 
 	"configcenter/src/common/metadata"
@@ -50,4 +51,8 @@ type DB interface {
 	CommitTransaction(context.Context, *metadata.TxnCapable) error
 	// AbortTransaction 取消事务
 	AbortTransaction(context.Context, *metadata.TxnCapable) error
+}
+
+type NeoDB interface {
+	NeoInsert(dataType string, inputParam mapstr.MapStr) error
 }

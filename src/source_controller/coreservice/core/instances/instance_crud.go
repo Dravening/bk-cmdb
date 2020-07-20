@@ -13,6 +13,7 @@
 package instances
 
 import (
+	"fmt"
 	"time"
 
 	"configcenter/src/common"
@@ -43,6 +44,11 @@ func (m *instanceManager) save(kit *rest.Kit, objID string, inputParam mapstr.Ma
 	inputParam.Set(common.CreateTimeField, ts)
 	inputParam.Set(common.LastTimeField, ts)
 	err = m.dbProxy.Table(tableName).Insert(kit.Ctx, inputParam)
+
+	neoErr := m.neo4jDB.NeoInsert(objID, inputParam)
+	if neoErr != nil {
+		fmt.Println("insert into neo4j failed.")
+	}
 	return id, err
 }
 

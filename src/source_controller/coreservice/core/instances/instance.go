@@ -34,7 +34,7 @@ var _ core.InstanceOperation = (*instanceManager)(nil)
 
 type instanceManager struct {
 	dbProxy   dal.RDB
-	neo4jDB   *neo4j.Neo4j
+	neo4jDB   dal.NeoDB
 	dependent OperationDependences
 	language  language.CCLanguageIf
 	Cache     *redis.Client
