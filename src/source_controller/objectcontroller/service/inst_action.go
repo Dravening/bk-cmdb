@@ -384,7 +384,7 @@ func (cli *Service) CreateInstObjects(req *restful.Request, resp *restful.Respon
 				cond.Field(common.BKInstParentStr).Eq(val)
 			}
 			for _, attrItem := range attrs {
-				if !attrItem.IsSystem && !attrItem.IsAPI && (attrItem.IsOnly || attrItem.PropertyID == obj.GetInstNameFieldName()) {
+				if !attrItem.IsSystem && !attrItem.IsAPI {
 					val, exists := inst[attrItem.PropertyID]
 					if !exists {
 						blog.Errorf("create inst objects error: missing only attr %#v, input %#v", attrItem, inst)

@@ -98,9 +98,37 @@ func (c *commonInst) CreateInstBatch(params types.ContextParams, obj model.Objec
 		return results, fmt.Errorf("model id = %s have been stopped to use", obj.GetID())
 	}
 	count := 0
-	// all the instances's name should not be same,
-	// so we need to check first.
-	instNameMap := make(map[string]struct{})
+
+	//make uniqueProperList
+	uniqueList, err := obj.GetUniques()
+	if err != nil {
+		blog.Errorf("failed to search the object unique, error info is %s", err.Error())
+		return nil, err
+	}
+	objAttrList, err := obj.GetAttributes()
+	if err != nil {
+		blog.Errorf("failed to search the object attributes, error info is %s", err.Error())
+		return nil, err
+	}
+	uniKeyList := []int64{}
+	for _, unique := range uniqueList {
+		if unique.GetMustCheck() == true {
+			for _, uniKey := range unique.GetKeys() {
+				uniKeyList = append(uniKeyList, int64(uniKey.ID))
+			}
+		}
+	}
+	uniqueProperList := []string{}
+	for _, objAttr := range objAttrList {
+		for _, key := range uniKeyList {
+			if objAttr.GetIID() == key {
+				uniqueProperList = append(uniqueProperList, objAttr.GetID())
+			}
+		}
+	}
+
+	//check unique
+	objUniList := map[string]int64{}
 	for line, inst := range *batchInfo.BatchInfo {
 		if inst == nil {
 			// this is a empty excel line.
@@ -108,25 +136,28 @@ func (c *commonInst) CreateInstBatch(params types.ContextParams, obj model.Objec
 		}
 		delete(inst, "import_from")
 
-		iName, exist := inst[common.BKInstNameField]
-		if !exist {
-			blog.Errorf("create object[%s] instance batch failed, because missing bk_inst_name field.", obj.GetID())
-			return nil, params.Err.Errorf(common.CCErrorTopoObjectInstanceMissingInstanceNameField, line)
-		}
+		uniStr := ""
+		for _, uniProper := range uniqueProperList {
+			//it should be exist.
+			iName, exist := inst[uniProper]
+			if !exist {
+				blog.Errorf("create object[%s] instance batch failed, because missing must check field.", obj.GetID())
+				return nil, params.Err.Errorf(common.CCErrorTopoObjectInstanceMissingInstanceNameField, line)
+			}
 
-		name, can := iName.(string)
-		if !can {
-			blog.Errorf("create object[%s] instance batch failed, because  bk_inst_name value type is not string.", obj.GetID())
-			return nil, params.Err.Errorf(common.CCErrorTopoInvalidObjectInstanceNameFieldValue, line)
+			name, can := iName.(string)
+			if !can {
+				blog.Errorf("create object[%s] instance batch failed, because  musk_check property id value type is not string.", obj.GetID())
+				return nil, params.Err.Errorf(common.CCErrorTopoInvalidObjectInstanceNameFieldValue, line)
+			}
+			//it's wrong when the unique property is totally same,some of them are same will be OK.
+			uniStr = fmt.Sprintf("%s,%s", uniStr, name)
 		}
-
-		// check if this instance name is already exist.
-		if _, ok := instNameMap[name]; ok {
-			blog.Errorf("create object[%s] instance batch, but bk_inst_name %s is duplicated.", obj.GetID(), name)
-			return nil, params.Err.Errorf(common.CCErrorTopoMutipleObjectInstanceName, name)
+		if objUniList[uniStr] != 0 {
+			return nil, params.Err.Errorf(common.CCErrorTopoMutipleObjectInstanceName, line)
 		}
+		objUniList[uniStr] = line
 
-		instNameMap[name] = struct{}{}
 		count++
 
 		item := c.instFactory.CreateInst(params, obj)
@@ -158,6 +189,128 @@ func (c *commonInst) CreateInstBatch(params types.ContextParams, obj model.Objec
 
 	return results, nil
 }
+
+//func (c *commonInst) CreateInstBatchs(params types.ContextParams, obj model.Object, batchInfo *InstBatchInfo) (*BatchResult, error) {
+//
+//	var rowErr map[int64]error
+//	results := &BatchResult{}
+//	if common.InputTypeExcel != batchInfo.InputType || nil == batchInfo.BatchInfo {
+//		return results, nil
+//	}
+//	for errIdx, err := range rowErr {
+//		results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", errIdx, err.Error()))
+//	}
+//	// we need to check unique first.
+//	uniqueList, err := obj.GetUniques()
+//	if err != nil {
+//		blog.Errorf("failed to search the object unique, error info is %s", err.Error())
+//		return nil, err
+//	}
+//	objAttrList, err := obj.GetAttributes()
+//	if err != nil {
+//		blog.Errorf("failed to search the object attributes, error info is %s", err.Error())
+//		return nil, err
+//	}
+//	uniKeyList := []int64{}
+//	for _, unique := range uniqueList {
+//		if unique.GetMustCheck() == true {
+//			for _, uniKey := range unique.GetKeys() {
+//				uniKeyList = append(uniKeyList, int64(uniKey.ID))
+//			}
+//		}
+//	}
+//	uniqueProperList := []string{}
+//	for _, objAttr := range objAttrList {
+//		for _, key := range uniKeyList {
+//			if objAttr.GetIID() == key {
+//				uniqueProperList = append(uniqueProperList, objAttr.GetID())
+//			}
+//		}
+//	}
+//
+//	objUniList := map[string]int64{}
+//	for line, instance := range *batchInfo.BatchInfo {
+//		uniStr := ""
+//		for _, uniProper := range uniqueProperList {
+//			//it should be exist.
+//			iName, exist := instance[uniProper]
+//			if !exist {
+//				blog.Errorf("create object[%s] instance batch failed, because missing must check field.", obj.GetID())
+//				return nil, params.Err.Errorf(common.CCErrorTopoObjectInstanceMissingInstanceNameField, line)
+//			}
+//
+//			name, can := iName.(string)
+//			if !can {
+//				blog.Errorf("create object[%s] instance batch failed, because  musk_check property id value type is not string.", obj.GetID())
+//				return nil, params.Err.Errorf(common.CCErrorTopoInvalidObjectInstanceNameFieldValue, line)
+//			}
+//			//it's wrong when the unique property is totally same,some of them are same will be OK.
+//			uniStr = fmt.Sprintf("%s,%s", uniStr, name)
+//		}
+//		if objUniList[uniStr] != 0 {
+//			return nil, params.Err.Errorf(common.CCErrorTopoMutipleObjectInstanceName, line)
+//		}
+//		objUniList[uniStr] = line
+//	}
+//
+//	for colIdx, colInput := range *batchInfo.BatchInfo {
+//		if colInput == nil {
+//			// this is a empty excel line.
+//			continue
+//		}
+//
+//		delete(colInput, "import_from")
+//		item := c.instFactory.CreateInst(params, obj)
+//		item.SetValues(colInput)
+//
+//		if item.GetValues().Exists(obj.GetInstIDFieldName()) {
+//			// check update
+//			targetInstID, err := item.GetInstID()
+//			if nil != err {
+//				blog.Errorf("[operation-inst] failed to get inst id, err: %s", err.Error())
+//				results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
+//				continue
+//			}
+//			if err = NewSupplementary().Validator(c).ValidatorUpdate(params, obj, item.ToMapStr(), targetInstID, nil); nil != err {
+//				blog.Errorf("[operation-inst] failed to valid, err: %s", err.Error())
+//				results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
+//				continue
+//			}
+//
+//		} else {
+//			// check this instance with object unique field.
+//			// otherwise, this instance is really a new one, need to be created.
+//			// TODO: add a logic to handle if this instance is already exist or not with unique api.
+//			// if already exist, then update, otherwise create.
+//
+//			if err := NewSupplementary().Validator(c).ValidatorCreate(params, obj, item.ToMapStr()); nil != err {
+//				switch tmpErr := err.(type) {
+//				case errors.CCErrorCoder:
+//					if tmpErr.GetCode() != common.CCErrCommDuplicateItem {
+//						blog.Errorf("[operation-inst] failed to valid, input value(%#v) the instname is %s, err: %s", item.GetValues(), obj.GetInstNameFieldName(), err.Error())
+//						results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
+//						continue
+//					}
+//				default:
+//
+//				}
+//
+//			}
+//		}
+//
+//		// set data
+//		err := item.Save(colInput)
+//		if nil != err {
+//			blog.Errorf("[operation-inst] failed to save the object(%s) inst data (%#v), err: %s", obj.GetID(), colInput, err.Error())
+//			results.Errors = append(results.Errors, params.Lang.Languagef("import_row_int_error_str", colIdx, err.Error()))
+//			continue
+//		}
+//		results.Success = append(results.Success, strconv.FormatInt(colIdx, 10))
+//		NewSupplementary().Audit(params, c.clientSet, item.GetObject(), c).CommitCreateLog(nil, nil, item)
+//	}
+//
+//	return results, nil
+//}
 
 func (c *commonInst) isValidInstID(params types.ContextParams, obj metatype.Object, instID int64) error {
 
