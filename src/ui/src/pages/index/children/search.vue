@@ -1,5 +1,17 @@
 <template>
     <div class="search-layout">
+        <template>
+            <bk-select :disabled="false" :selected.sync="value" style="width: 250px;"
+                       ext-cls="select-custom"
+                       ext-popover-cls="select-popover-custom"
+                       searchable>
+                <bk-select-option v-for="option in list"
+                                  :key="option.id"
+                                  :value="option.id"
+                                  :label="option.name">
+                </bk-select-option>
+            </bk-select>
+        </template>
         <div class="search-box" v-click-outside="handleClickOutside">
             <input id="indexSearch" class="search-keyword" type="text" maxlength="40" :placeholder="$t('Index[\'开始查询\']')"
                 v-model.trim="keyword"
@@ -24,6 +36,9 @@
                 </div>
             </div>
         </div>
+        <bk-button :theme="'primary'" type="submit" :title="'高级搜索'" @click="handleClick" class="mr10 button-color">
+            高级搜索
+        </bk-button>
     </div>
 </template>
 
@@ -37,6 +52,13 @@
         },
         data () {
             return {
+                value: 1,
+                list: [
+                    { id: 1, name: 'ip' },
+                    { id: 2, name: '运维管理员' },
+                    { id: 3, name: '主要维护人' },
+                    { id: 4, name: '备份维护人' }
+                ],
                 focus: false,
                 keyword: '',
                 searchParams: {
@@ -208,15 +230,24 @@
                         this.$router.push('/hosts')
                     }
                 }
+            },
+            handleClick () {
+                this.$router.push({
+                    path: '/hosts'
+                })
             }
         }
     }
 </script>
 <style lang="scss" scoped>
-    .search-layout{}
+    .search-layout{
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+    }
     .search-box{
         position: relative;
-        height: 42px;
+        height: 36px;
         overflow: visible;
         .search-keyword{
             width: 100%;
