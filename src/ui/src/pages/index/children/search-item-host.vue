@@ -1,6 +1,7 @@
 <template>
     <div class="search-item-host clearfix" @click="handleHostClick" :title="getHostTitle(host)">
         <div class="host-ip fl">{{host['host']['bk_host_innerip']}}</div>
+        <div class="host-ip fl" v-if="filterValue !== 'bk_host_innerip'">{{ host['host'][filterValue] }}</div>
         <div class="host-biz fr">{{host['biz'][0]['bk_biz_name']}}</div>
     </div>
 </template>
@@ -11,6 +12,10 @@
         props: {
             host: {
                 type: Object,
+                required: true
+            },
+            filterValue: {
+                type: String,
                 required: true
             }
         },
@@ -57,6 +62,7 @@
 <style lang="scss" scoped>
 .search-item-host{
     padding: 0 4px;
+    display: flex;
 }
 .search-item-host:hover{
     .host-ip{

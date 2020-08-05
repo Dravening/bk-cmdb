@@ -17,7 +17,7 @@
                 v-model.trim="keyword"
                 @focus="focus = true">
             <label class="bk-icon icon-search" for="indexSearch"></label>
-            <div class="search-result" v-show="focus && keyword.length > 2">
+            <div class="search-result" v-show="focus && keyword.length > 1">
                 <div class="search-loading" v-bkloading="{isLoading: loading}" v-if="loading"></div>
                 <div :class="['result-layout', {'result-layout-empty': !resultTabpanels.length}]" v-show="!loading">
                     <bk-tab class="result-tab" v-if="resultTabpanels.length"
@@ -28,7 +28,7 @@
                             :key="index"
                             :name="panel"
                             :title="getPanelTitle(panel)">
-                            <v-search-item :list="resultTab.list[panel]" :model="panel"></v-search-item>
+                            <v-search-item :list="resultTab.list[panel]" :filterValue = 'value' :model="panel"></v-search-item>
                         </bk-tabpanel>
                     </bk-tab>
                     <div class="result-empty" v-else>{{$t('Common["暂时没有数据"]')}}</div>
@@ -120,7 +120,7 @@
         },
         watch: {
             keyword (keyword) {
-                if (keyword.length > 2) {
+                if (keyword.length > 1) {
                     // this.searchParams.ip.data = [keyword]
                     this.searchParams.condition[0].condition.splice(0, 1, {
                         'operator': '$regex',
@@ -142,7 +142,7 @@
             // 函数节流，500ms发起一次主机查询
             handleSearch: Throttle(function () {
                 this.cancelSource && this.cancelSource.cancel()
-                if (this.keyword.length > 2) {
+                if (this.keyword.length > 1) {
                     this.cancelSource = this.$Axios.CancelToken.source()
                     this.loading = true
                     this.$axios.post('hosts/search', this.searchParams, {cancelToken: this.cancelSource.token}).then(res => {

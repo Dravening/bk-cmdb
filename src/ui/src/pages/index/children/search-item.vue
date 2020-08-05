@@ -7,7 +7,7 @@
                 <li class="search-item"
                     v-for="row in itemPerCol"
                     v-if="getCellIndex(col, row) < list.length">
-                    <v-search-item-host v-if="model === 'host'" :host="list[getCellIndex(col, row)]"></v-search-item-host>
+                    <v-search-item-host v-if="model === 'host'" :host="list[getCellIndex(col, row)]" :filterValue="filterValue"></v-search-item-host>
                 </li>
             </ul>
         </div>
@@ -27,6 +27,10 @@
             },
             list: {
                 type: Array,
+                required: true
+            },
+            filterValue: {
+                type: String,
                 required: true
             }
         },
@@ -56,7 +60,7 @@
     }
     .search-list{
         padding: 0 14px 0 18px;
-        width: 33%;
+        width: 40%;
         border-right: 1px solid #ebf0f5;
         &:first-child{
             padding-left: 0;

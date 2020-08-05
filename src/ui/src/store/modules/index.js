@@ -18,7 +18,7 @@ const state = {
         exact: 0,
         innerip: true,
         outerip: true,
-        assigned: false
+        assigned: true
     }
 }
 
