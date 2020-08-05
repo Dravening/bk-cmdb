@@ -122,7 +122,7 @@
             keyword (keyword) {
                 if (keyword.length > 2) {
                     // this.searchParams.ip.data = [keyword]
-                    this.searchParams.condition[0].condition.push({
+                    this.searchParams.condition[0].condition.splice(0, 1, {
                         'operator': '$regex',
                         'value': this.keyword,
                         'field': this.value
