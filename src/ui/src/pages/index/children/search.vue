@@ -1,10 +1,10 @@
 <template>
     <div class="search-layout">
         <template>
-            <bk-select :disabled="false" :selected.sync="value" style="width: 250px;"
+            <bk-select :disabled="false" :selected.sync="value" style="width: 130px;"
                        ext-cls="select-custom"
                        ext-popover-cls="select-popover-custom"
-                       searchable>
+                       filterable>
                 <bk-select-option v-for="option in list"
                                   :key="option.id"
                                   :value="option.id"
@@ -36,7 +36,7 @@
                 </div>
             </div>
         </div>
-        <bk-button :theme="'primary'" type="submit" :title="'高级搜索'" @click="handleClick" class="mr10 button-color">
+        <bk-button type="primary" :title="'高级搜索'" @click="handleClick" class="mr10 button-color">
             高级搜索
         </bk-button>
     </div>
@@ -52,12 +52,8 @@
         },
         data () {
             return {
-                value: 1,
+                value: 'bk_host_innerip',
                 list: [
-                    { id: 1, name: 'ip' },
-                    { id: 2, name: '运维管理员' },
-                    { id: 3, name: '主要维护人' },
-                    { id: 4, name: '备份维护人' }
                 ],
                 focus: false,
                 keyword: '',
@@ -104,6 +100,9 @@
                 }
             }
         },
+        mounted () {
+            this.searchHostAttr()
+        },
         computed: {
             ...mapGetters('navigation', ['classifications']),
             allModels () {
@@ -122,7 +121,12 @@
         watch: {
             keyword (keyword) {
                 if (keyword.length > 2) {
-                    this.searchParams.ip.data = [keyword]
+                    // this.searchParams.ip.data = [keyword]
+                    this.searchParams.condition[0].condition.push({
+                        'operator': '$regex',
+                        'value': this.keyword,
+                        'field': this.value
+                    })
                     this.loading = true
                     this.handleSearch(keyword)
                 } else {
@@ -233,8 +237,29 @@
             },
             handleClick () {
                 this.$router.push({
-                    path: '/hosts'
+                    path: '/resource'
                 })
+            },
+            searchHostAttr () {
+                this.$axios.post('object/attr/search', {
+                    'bk_supplier_account': this.bkSupplierAccount,
+                    'bk_obj_id': 'host'}
+                    ).then(res => {
+                        if (res.result) {
+                            res.data.forEach(item => {
+                                // if (item['bk_property_type'] !== 'timezone' || item['bk_property_type'] !== 'date' || item['bk_property_type'] !== 'time') {
+                                if (['timezone', 'date', 'time', 'singleasst', 'multiasst'].indexOf(item['bk_property_type']) === -1) {
+                                    this.list.push(
+                                        {'id': item['bk_property_id'], 'name': item['bk_property_name']}
+                                    )
+                                    this.value = this.list[0].id
+                                }
+                            }
+                            )
+                        } else {
+                            this.$alertMsg(res['bk_error_msg'])
+                        }
+                    })
             }
         }
     }
@@ -242,10 +267,12 @@
 <style lang="scss" scoped>
     .search-layout{
         display: flex;
-        justify-content: space-around;
+        justify-content: center;
         width: 100%;
     }
     .search-box{
+        width: 50%;
+        min-width: 400px;
         position: relative;
         height: 36px;
         overflow: visible;

@@ -49,7 +49,7 @@
                         <span>{{$t("Hosts['未分配主机']")}}</span>
                     </label>
                     <label class="bk-form-checkbox">
-                        <input type="checkbox" v-model="isShowAssigned">
+                        <input type="checkbox" v-model="isShowAssigned" :checked="true">
                         <span>{{$t("Hosts['已分配主机']")}}</span>
                     </label>
                 </div>
@@ -174,7 +174,7 @@
                     'bk_host_outerip': true,
                     'exact': 0
                 },
-                isShowAssigned: false,
+                isShowAssigned: true,
                 localQueryColumnData: {},
                 localQueryColumns: [],
                 operators: {
