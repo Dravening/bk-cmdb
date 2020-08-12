@@ -26,6 +26,7 @@
                     @applyCollect="setQueryColumnData"
                     @applyHistory="setQueryColumnData"
                     @filterChange="setFilterParams"
+                    @filter-change="setFilterParams"
                     @emptyField="emptyFilterField">
                 </v-filter>
             </div>
@@ -68,7 +69,7 @@
                     <div class="bk-group btn-group bk-button-group clearfix">
                         <div class="btn-tooltip-wrapper" v-tooltip="$t('BusinessTopology[\'修改\']')">
                             <button class="bk-button bk-default"
-                                :disabled="!table.chooseId.length" 
+                                :disabled="!table.chooseId.length"
                                 @click="multipleUpdate">
                                 <i class="icon-cc-edit"></i>
                             </button>
@@ -126,15 +127,15 @@
                     <template v-for="({id,name, property}, index) in table.tableHeader" :slot="id" slot-scope="{ item }">
                         <label v-if="id === 'bk_host_id'" style="width:100%;text-align:center;" class="bk-form-checkbox bk-checkbox-small" @click.stop>
                             <input type="checkbox"
-                                :value="item['host']['bk_host_id']" 
+                                :value="item['host']['bk_host_id']"
                                 v-model="table.chooseId">
                         </label>
                         <template v-else>{{getCellValue(property, item)}}</template>
                     </template>
                 </v-table>
         </div>
-        <v-sideslider 
-            :isShow.sync="sideslider.isShow" 
+        <v-sideslider
+            :isShow.sync="sideslider.isShow"
             :title="sideslider.title"
             :hasCloseConfirm="true"
             :isCloseConfirmShow="sideslider.isCloseConfirmShow"
@@ -143,7 +144,7 @@
             <div slot="content" class="sideslider-content" :class="`sideslider-content-${sideslider.type}`">
                 <bk-tab class="attribute-tab" style="border:none;"
                     v-show="sideslider.type === 'attribute'"
-                    :active-name="sideslider.attribute.active" 
+                    :active-name="sideslider.attribute.active"
                     @tab-changed="attributeTabChanged">
                     <bk-tabpanel name="attribute" :title="$t('HostResourcePool[\'主机属性\']')">
                         <v-attribute ref="hostAttribute"
@@ -176,25 +177,25 @@
                     </bk-tabpanel>
                     <bk-tabpanel name="status" :title="$t('HostResourcePool[\'实时状态\']')"
                         :show="!sideslider.attribute.form.isMultipleUpdate">
-                        <v-status :isShow="sideslider.attribute.active==='status'" 
+                        <v-status :isShow="sideslider.attribute.active==='status'"
                             :isSidesliderShow="sideslider.isShow"
                             :isWindowsOSType="sideslider.attribute.isWindowsOSType"
                             :isLoaded.sync="sideslider.attribute.status.isLoaded">
                         </v-status>
                     </bk-tabpanel>
-                    <bk-tabpanel name="host" title="Host" 
+                    <bk-tabpanel name="host" title="Host"
                         :show="!sideslider.attribute.form.isMultipleUpdate && !sideslider.attribute.isWindowsOSType && hostSnapshot !== ''">
                         <v-host></v-host>
                     </bk-tabpanel>
-                    <bk-tabpanel name="router" title="Router" 
+                    <bk-tabpanel name="router" title="Router"
                         :show="!sideslider.attribute.form.isMultipleUpdate && !sideslider.attribute.isWindowsOSType && hostSnapshot !== ''">
                         <v-router></v-router>
                     </bk-tabpanel>
                     <bk-tabpanel name="history" :title="$t('HostResourcePool[\'变更记录\']')"
                         :show="!sideslider.attribute.form.isMultipleUpdate && sideslider.attribute.form.type === 'update'">
-                        <v-history 
-                            :type="'host'" 
-                            :active="sideslider.attribute.active === 'history'" 
+                        <v-history
+                            :type="'host'"
+                            :active="sideslider.attribute.active === 'history'"
                             :innerIP="sideslider.attribute.form.formValues.bk_host_innerip">
                         </v-history>
                     </bk-tabpanel>
@@ -359,7 +360,8 @@
             ...mapGetters({
                 'bkSupplierAccount': 'bkSupplierAccount',
                 'hostSnapshot': 'getHostSnapshot',
-                'bkPrivBizList': 'bkPrivBizList'
+                'bkPrivBizList': 'bkPrivBizList',
+                'hostSearch': 'hostSearch'
             }),
             ...mapGetters('object', ['topo']),
             allProperties () {
@@ -631,7 +633,8 @@
                 this.bkBizId = bkBizId
             },
             setFilterParams (filter) {
-                this.filterParams = filter
+                Object.assign('setFilterParams', filter)
+                this.filterParams = this.$deepClone(filter)
             },
             multipleUpdate () {
                 let attribute = this.sideslider.attribute
@@ -962,7 +965,9 @@
                 if (reset) {
                     this.table.chooseId = []
                 }
-                this.getTableList()
+                setTimeout(() => {
+                    this.getTableList()
+                }, 100)
             },
             setTablePageSize (size) {
                 this.table.pagination.size = size
@@ -998,10 +1003,27 @@
                 }
                 return mergedParams
             },
+            addParams () {
+                let serchKey = this.hostSearch.key
+                if (!serchKey) return
+                let exitKeys = this.filter.queryColumns.map(item => {
+                    return item.bk_property_id
+                })
+                this.attribute.forEach(item => {
+                    if (item['bk_obj_id'] === 'host') {
+                        item.properties.forEach(prop => {
+                            if (prop.bk_property_id === serchKey && exitKeys.indexOf(serchKey) === -1) {
+                                this.filter.queryColumns.push(prop)
+                            }
+                        })
+                    }
+                })
+            },
             async init () {
                 await this.setTopoAttribute()
                 await this.getAllAttribute()
                 await this.getUserCustomColumn()
+                this.addParams()
             }
         },
         created () {

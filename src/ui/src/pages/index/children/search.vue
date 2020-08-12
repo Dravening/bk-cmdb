@@ -6,9 +6,9 @@
                        ext-popover-cls="select-popover-custom"
                        filterable>
                 <bk-select-option v-for="option in list"
-                                  :key="option.id"
-                                  :value="option.id"
-                                  :label="option.name">
+                                  :key="option.bk_property_id"
+                                  :value="option.bk_property_id"
+                                  :label="option.bk_property_name">
                 </bk-select-option>
             </bk-select>
         </template>
@@ -205,8 +205,10 @@
                 this.handleClickOutside()
             },
             showMoreHost () {
+                const key = (this.value === 'bk_host_innerip' || this.value === 'bk_host_outerip') ? 'ip' : this.value
                 this.$store.commit('setHostSearch', {
-                    ip: this.keyword,
+                    [key]: this.keyword,
+                    key: key,
                     exact: 0,
                     innerip: true,
                     outerip: true,
@@ -249,9 +251,7 @@
                             res.data.forEach(item => {
                                 // if (item['bk_property_type'] !== 'timezone' || item['bk_property_type'] !== 'date' || item['bk_property_type'] !== 'time') {
                                 if (['timezone', 'date', 'time', 'singleasst', 'multiasst'].indexOf(item['bk_property_type']) === -1) {
-                                    this.list.push(
-                                        {'id': item['bk_property_id'], 'name': item['bk_property_name']}
-                                    )
+                                    this.list.push(item)
                                     this.value = this.list[0].id
                                 }
                             }

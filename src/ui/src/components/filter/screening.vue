@@ -268,7 +268,7 @@
                         }
                         localQueryColumnData[bkPropertyId] = {
                             field: bkPropertyId,
-                            value: operatorType === 'date' ? [] : '',
+                            value: operatorType === 'date' ? [] : column.bk_property_id === this.hostSearch.key ? this.hostSearch[column.bk_property_id] : '',
                             operator: this.operators[operatorType][0]['value'],
                             'bk_obj_id': bkObjId
                         }
