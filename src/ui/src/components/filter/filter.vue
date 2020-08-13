@@ -24,6 +24,7 @@
                     :isShowScope="isShowScope"
                     @bkBizSelected="bkBizSelected"
                     @refresh="refresh"
+                    @showField="showField"
                     @filterChange="filterChange">
                 </v-screening>
             </bk-tabpanel>

@@ -131,6 +131,7 @@
             </template>
             <div class="screening-btn" ref="screeningBtn">
                 <bk-button type="primary" :loading="$loading('hostSearch')" @click.prevent="refresh">{{$t('HostResourcePool[\'刷新查询\']')}}</bk-button>
+                <bk-button type="primary" :loading="$loading('hostSearch')" @click.prevent="showField">{{$t('HostResourcePool[\'设置筛选项\']')}}</bk-button>
             </div>
         </form>
     </div>
@@ -481,6 +482,9 @@
             },
             refresh () {
                 this.$emit('refresh')
+            },
+            showField () {
+                this.$emit('showField')
             },
             calcRefreshPosition () {
                 let screenTabpanelContent = this.$parent.$parent.$parent.$refs.screeningTabpanel.$el.parentElement
