@@ -96,6 +96,7 @@ type AssociationOperationInterface interface {
 	DeleteObject(params types.ContextParams, asstID int) (resp *metadata.DeleteAssociationObjectResult, err error)
 
 	SearchInst(params types.ContextParams, request *metadata.SearchAssociationInstRequest) (resp *metadata.SearchAssociationInstResult, err error)
+	SearchInstAssociations(params types.ContextParams, request *metadata.SearchAssociationInstRequest) (resp *metadata.SearchAssociationInstResult, err error)
 	CreateInst(params types.ContextParams, request *metadata.CreateAssociationInstRequest) (resp *metadata.CreateAssociationInstResult, err error)
 	DeleteInst(params types.ContextParams, assoID int64) (resp *metadata.DeleteAssociationInstResult, err error)
 
@@ -767,6 +768,17 @@ func (assoc *association) DeleteObject(params types.ContextParams, asstID int) (
 
 func (assoc *association) SearchInst(params types.ContextParams, request *metadata.SearchAssociationInstRequest) (resp *metadata.SearchAssociationInstResult, err error) {
 	rsp, err := assoc.clientSet.CoreService().Association().ReadInstAssociation(context.Background(), params.Header, &metadata.QueryCondition{Condition: request.Condition})
+
+	resp = &metadata.SearchAssociationInstResult{BaseResp: rsp.BaseResp, Data: []*metadata.InstAsst{}}
+	for index := range rsp.Data.Info {
+		resp.Data = append(resp.Data, &rsp.Data.Info[index])
+	}
+
+	return resp, err
+}
+
+func (assoc *association) SearchInstAssociations(params types.ContextParams, request *metadata.SearchAssociationInstRequest) (resp *metadata.SearchAssociationInstResult, err error) {
+	rsp, err := assoc.clientSet.CoreService().Association().ReadInstAssociations(context.Background(), params.Header, &metadata.QueryCondition{Condition: request.Condition})
 
 	resp = &metadata.SearchAssociationInstResult{BaseResp: rsp.BaseResp, Data: []*metadata.InstAsst{}}
 	for index := range rsp.Data.Info {

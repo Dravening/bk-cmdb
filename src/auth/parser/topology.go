@@ -605,6 +605,7 @@ func (ps *parseStream) objectAssociation() *parseStream {
 }
 
 const (
+	findObjectInstanceAssociationsPattern  = "/api/v3/inst/associations/action/search"
 	findObjectInstanceAssociationPattern   = "/api/v3/inst/association/action/search"
 	createObjectInstanceAssociationPattern = "/api/v3/inst/association/action/create"
 )
@@ -621,6 +622,19 @@ func (ps *parseStream) objectInstanceAssociation() *parseStream {
 
 	// find object instance's association operation.
 	if ps.RequestCtx.URI == findObjectInstanceAssociationPattern && ps.RequestCtx.Method == http.MethodPost {
+		ps.Attribute.Resources = []meta.ResourceAttribute{
+			{
+				Basic: meta.Basic{
+					Type:   meta.ModelInstanceAssociation,
+					Action: meta.FindMany,
+				},
+			},
+		}
+		return ps
+	}
+
+	//find all associations belongs to certain instance.
+	if ps.RequestCtx.URI == findObjectInstanceAssociationsPattern && ps.RequestCtx.Method == http.MethodPost {
 		ps.Attribute.Resources = []meta.ResourceAttribute{
 			{
 				Basic: meta.Basic{
