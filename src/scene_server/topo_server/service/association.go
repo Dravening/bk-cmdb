@@ -325,6 +325,24 @@ func (s *Service) SearchAssociationInst(params types.ContextParams, pathParams, 
 	return ret.Data, nil
 }
 
+func (s *Service) SearchAssociationsInst(params types.ContextParams, pathParams, queryParams ParamsGetter, data mapstr.MapStr) (interface{}, error) {
+	request := &metadata.SearchAssociationInstRequest{}
+	if err := data.MarshalJSONInto(request); err != nil {
+		return nil, params.Err.New(common.CCErrCommParamsInvalid, err.Error())
+	}
+
+	ret, err := s.Core.AssociationOperation().SearchInstAssociations(params, request)
+	if err != nil {
+		return nil, err
+	}
+
+	if ret.Code != 0 {
+		return nil, params.Err.New(ret.Code, ret.ErrMsg)
+	}
+
+	return ret.Data, nil
+}
+
 func (s *Service) CreateAssociationInst(params types.ContextParams, pathParams, queryParams ParamsGetter, data mapstr.MapStr) (interface{}, error) {
 	request := &metadata.CreateAssociationInstRequest{}
 	if err := data.MarshalJSONInto(request); err != nil {

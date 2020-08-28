@@ -188,6 +188,15 @@ func (s *coreService) SearchInstanceAssociation(params core.ContextParams, pathP
 	return s.core.AssociationOperation().SearchInstanceAssociation(params, inputData)
 }
 
+func (s *coreService) SearchInstanceAssociations(params core.ContextParams, pathParams, queryParams ParamsGetter, data mapstr.MapStr) (interface{}, error) {
+
+	inputData := metadata.QueryCondition{}
+	if err := data.MarshalJSONInto(&inputData); nil != err {
+		return nil, err
+	}
+	return s.core.AssociationOperation().SearchInstanceAssociations(params, inputData)
+}
+
 func (s *coreService) DeleteInstanceAssociation(params core.ContextParams, pathParams, queryParams ParamsGetter, data mapstr.MapStr) (interface{}, error) {
 
 	inputData := metadata.DeleteOption{}

@@ -46,6 +46,7 @@ func (s *Service) initAssociation() {
 
 	// inst association methods
 	s.addAction(http.MethodPost, "/inst/association/action/search", s.SearchAssociationInst, nil)
+	s.addAction(http.MethodPost, "/inst/associations/action/search", s.SearchAssociationsInst, nil)
 	s.addAction(http.MethodPost, "/inst/association/action/create", s.CreateAssociationInst, nil)
 	s.addAction(http.MethodDelete, "/inst/association/{association_id}/action/delete", s.DeleteAssociationInst, nil)
 

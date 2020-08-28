@@ -270,6 +270,67 @@ func (m *associationInstance) SearchInstanceAssociation(ctx core.ContextParams, 
 	return dataResult, nil
 }
 
+func (m *associationInstance) SearchInstanceAssociations(ctx core.ContextParams, inputParam metadata.QueryCondition) (*metadata.QueryResult, error) {
+	ownerIDArr := []string{ctx.SupplierAccount, common.BKDefaultOwnerID}
+
+	//search by BKObjID
+	condBKObjID := mongo.NewCondition()
+	condBKObjID.Element(&mongo.Eq{Key: common.BKObjIDField, Val: inputParam.Condition["bk_object_id"]}, &mongo.Eq{Key: common.BKInstIDField, Val: inputParam.Condition["bk_inst_id"]})
+	condBKObjID.Element(&mongo.In{Key: common.BKOwnerIDField, Val: ownerIDArr})
+	inputBKObjID := metadata.QueryCondition{
+		Fields:    inputParam.Fields,
+		Limit:     inputParam.Limit,
+		SortArr:   inputParam.SortArr,
+		Condition: condBKObjID.ToMapStr(),
+	}
+	//search by BKAsstObjID
+	condBKAsstObjID := mongo.NewCondition()
+	condBKAsstObjID.Element(&mongo.Eq{Key: common.BKAsstObjIDField, Val: inputParam.Condition["bk_object_id"]}, &mongo.Eq{Key: common.BKAsstInstIDField, Val: inputParam.Condition["bk_inst_id"]})
+	condBKAsstObjID.Element(&mongo.In{Key: common.BKOwnerIDField, Val: ownerIDArr})
+	inputBKAsstObjID := metadata.QueryCondition{
+		Fields:    inputParam.Fields,
+		Limit:     inputParam.Limit,
+		SortArr:   inputParam.SortArr,
+		Condition: condBKAsstObjID.ToMapStr(),
+	}
+
+	bkObjIDInstAsstItems, err := m.searchInstanceAssociation(ctx, inputBKObjID)
+	if nil != err {
+		blog.Errorf("search inst association array err [%#v], rid: %s", err, ctx.ReqID)
+		return &metadata.QueryResult{}, err
+	}
+	bkAsstObjIDInstAsstItems, err := m.searchInstanceAssociation(ctx, inputBKAsstObjID)
+	if nil != err {
+		blog.Errorf("search inst association array err [%#v], rid: %s", err, ctx.ReqID)
+		return &metadata.QueryResult{}, err
+	}
+
+	//count
+	bkObjIDCount, err := m.countInstanceAssociation(ctx, inputBKObjID.Condition)
+	if nil != err {
+		blog.Errorf("search inst association count err [%#v], rid: %s", err, ctx.ReqID)
+		return &metadata.QueryResult{}, err
+	}
+	bkAsstObjIDCount, err := m.countInstanceAssociation(ctx, inputBKAsstObjID.Condition)
+	if nil != err {
+		blog.Errorf("search inst association count err [%#v], rid: %s", err, ctx.ReqID)
+		return &metadata.QueryResult{}, err
+	}
+
+	//result
+	dataResult := &metadata.QueryResult{}
+	dataResult.Info = make([]mapstr.MapStr, 0)
+	for _, item := range bkObjIDInstAsstItems {
+		dataResult.Info = append(dataResult.Info, mapstr.NewFromStruct(item, "field"))
+	}
+	for _, item := range bkAsstObjIDInstAsstItems {
+		dataResult.Info = append(dataResult.Info, mapstr.NewFromStruct(item, "field"))
+	}
+	dataResult.Count = bkObjIDCount + bkAsstObjIDCount
+
+	return dataResult, nil
+}
+
 func (m *associationInstance) DeleteInstanceAssociation(ctx core.ContextParams, inputParam metadata.DeleteOption) (*metadata.DeletedCount, error) {
 	inputParam.Condition.Set(common.BKOwnerIDField, ctx.SupplierAccount)
 	cnt, err := m.instCount(ctx, inputParam.Condition)

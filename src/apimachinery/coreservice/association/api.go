@@ -285,6 +285,20 @@ func (asst *association) ReadInstAssociation(ctx context.Context, h http.Header,
 	return
 }
 
+func (asst *association) ReadInstAssociations(ctx context.Context, h http.Header, input *metadata.QueryCondition) (resp *metadata.ReadInstAssociationResult, err error) {
+	resp = new(metadata.ReadInstAssociationResult)
+	subPath := "/read/instanceassociations"
+
+	err = asst.client.Post().
+		WithContext(ctx).
+		Body(input).
+		SubResource(subPath).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+	return
+}
+
 func (asst *association) DeleteInstAssociation(ctx context.Context, h http.Header, input *metadata.DeleteOption) (resp *metadata.DeletedOptionResult, err error) {
 	resp = new(metadata.DeletedOptionResult)
 	subPath := "/delete/instanceassociation"
