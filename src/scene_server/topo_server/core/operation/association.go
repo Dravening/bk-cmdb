@@ -99,6 +99,7 @@ type AssociationOperationInterface interface {
 	SearchInstAssociations(params types.ContextParams, request *metadata.SearchAssociationInstRequest) (resp *metadata.SearchAssociationInstResult, err error)
 	CreateInst(params types.ContextParams, request *metadata.CreateAssociationInstRequest) (resp *metadata.CreateAssociationInstResult, err error)
 	DeleteInst(params types.ContextParams, assoID int64) (resp *metadata.DeleteAssociationInstResult, err error)
+	DeleteInstAssociations(params types.ContextParams, request *metadata.DeleteAssociationInstRequest) (resp *metadata.DeleteAssociationInstResult, err error)
 
 	ImportInstAssociation(ctx context.Context, params types.ContextParams, objID string, importData map[int]metadata.ExcelAssocation) (resp metadata.ResponeImportAssociationData, err error)
 
@@ -778,8 +779,6 @@ func (assoc *association) SearchInst(params types.ContextParams, request *metada
 }
 
 func (assoc *association) SearchInstAssociations(params types.ContextParams, request *metadata.SearchAssociationInstRequest) (resp *metadata.SearchAssociationInstResult, err error) {
-	blog.Debug("request.Condition", &request.Condition, request.Condition)
-
 	rsp, err := assoc.clientSet.CoreService().Association().ReadInstAssociations(context.Background(), params.Header, &metadata.QueryCondition{Condition: request.Condition})
 
 	resp = &metadata.SearchAssociationInstResult{BaseResp: rsp.BaseResp, Data: []*metadata.InstAsst{}}
@@ -1007,6 +1006,25 @@ func (assoc *association) DeleteInst(params types.ContextParams, assoID int64) (
 	}
 
 	return resp, err
+}
+
+func (assoc *association) DeleteInstAssociations(params types.ContextParams, request *metadata.DeleteAssociationInstRequest) (resp *metadata.DeleteAssociationInstResult, err error) {
+	rsp, err := assoc.clientSet.CoreService().Association().DeleteInstAssociations(context.Background(), params.Header, &metadata.DeleteOption{Condition: request.Condition})
+	if nil != err {
+		blog.Errorf("[operation-asst] failed to request object controller, err: %s, rid: %s", err.Error(), params.ReqID)
+		return nil, params.Err.New(common.CCErrCommHTTPDoRequestFailed, err.Error())
+	}
+
+	if !rsp.Result {
+		blog.Errorf("[operation-asst] failed to delete the inst association info , err: %s, rid: %s", rsp.ErrMsg, params.ReqID)
+		return nil, params.Err.New(rsp.Code, rsp.ErrMsg)
+	}
+
+	resp = &metadata.DeleteAssociationInstResult{
+		BaseResp: rsp.BaseResp,
+	}
+
+	return resp, nil
 }
 
 // SearchInstAssociationList 与实例有关系的实例关系数据,以分页的方式返回

@@ -90,6 +90,7 @@ func (s *Service) initBusinessAssociation() {
 	s.addAction(http.MethodPost, "/find/instassociation", s.SearchAssociationInst, nil)
 	s.addAction(http.MethodPost, "/create/instassociation", s.CreateAssociationInst, nil)
 	s.addAction(http.MethodDelete, "/delete/instassociation/{association_id}", s.DeleteAssociationInst, nil)
+	s.addAction(http.MethodDelete, "/delete/instassociations", s.DeleteAssociationsInst, nil)
 
 	// topo search methods
 	s.addAction(http.MethodPost, "/find/instassociation/object/{bk_obj_id}", s.SearchInstByAssociation, nil)

@@ -275,7 +275,7 @@ func (m *associationInstance) SearchInstanceAssociations(ctx core.ContextParams,
 
 	//search by BKObjID
 	condBKObjID := mongo.NewCondition()
-	condBKObjID.Element(&mongo.Eq{Key: common.BKObjIDField, Val: inputParam.Condition["bk_object_id"]}, &mongo.Eq{Key: common.BKInstIDField, Val: inputParam.Condition["bk_inst_id"]})
+	condBKObjID.Element(&mongo.Eq{Key: common.BKObjIDField, Val: inputParam.Condition[common.BKObjIDField]}, &mongo.Eq{Key: common.BKInstIDField, Val: inputParam.Condition[common.BKInstIDField]})
 	condBKObjID.Element(&mongo.In{Key: common.BKOwnerIDField, Val: ownerIDArr})
 	inputBKObjID := metadata.QueryCondition{
 		Fields:    inputParam.Fields,
@@ -285,7 +285,7 @@ func (m *associationInstance) SearchInstanceAssociations(ctx core.ContextParams,
 	}
 	//search by BKAsstObjID
 	condBKAsstObjID := mongo.NewCondition()
-	condBKAsstObjID.Element(&mongo.Eq{Key: common.BKAsstObjIDField, Val: inputParam.Condition["bk_object_id"]}, &mongo.Eq{Key: common.BKAsstInstIDField, Val: inputParam.Condition["bk_inst_id"]})
+	condBKAsstObjID.Element(&mongo.Eq{Key: common.BKAsstObjIDField, Val: inputParam.Condition[common.BKObjIDField]}, &mongo.Eq{Key: common.BKAsstInstIDField, Val: inputParam.Condition[common.BKInstIDField]})
 	condBKAsstObjID.Element(&mongo.In{Key: common.BKOwnerIDField, Val: ownerIDArr})
 	inputBKAsstObjID := metadata.QueryCondition{
 		Fields:    inputParam.Fields,
