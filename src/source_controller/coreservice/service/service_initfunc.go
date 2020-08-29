@@ -102,6 +102,7 @@ func (s *coreService) initInstanceAssociation() {
 	s.addAction(http.MethodPost, "/createmany/instanceassociation", s.CreateManyInstanceAssociation, nil)
 	s.addAction(http.MethodPost, "/read/instanceassociation", s.SearchInstanceAssociation, nil)
 	s.addAction(http.MethodDelete, "/delete/instanceassociation", s.DeleteInstanceAssociation, nil)
+	s.addAction(http.MethodDelete, "/delete/instanceassociations", s.DeleteInstanceAssociations, nil)
 }
 
 func (s *coreService) initMainline() {

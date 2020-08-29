@@ -298,3 +298,17 @@ func (asst *association) DeleteInstAssociation(ctx context.Context, h http.Heade
 		Into(resp)
 	return
 }
+
+func (asst *association) DeleteInstAssociations(ctx context.Context, h http.Header, input *metadata.DeleteOption) (resp *metadata.DeletedOptionResult, err error) {
+	resp = new(metadata.DeletedOptionResult)
+	subPath := "/delete/instanceassociations"
+
+	err = asst.client.Delete().
+		WithContext(ctx).
+		Body(input).
+		SubResource(subPath).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+	return
+}

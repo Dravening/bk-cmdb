@@ -605,8 +605,9 @@ func (ps *parseStream) objectAssociation() *parseStream {
 }
 
 const (
-	findObjectInstanceAssociationPattern   = "/api/v3/inst/association/action/search"
-	createObjectInstanceAssociationPattern = "/api/v3/inst/association/action/create"
+	findObjectInstanceAssociationPattern    = "/api/v3/inst/association/action/search"
+	createObjectInstanceAssociationPattern  = "/api/v3/inst/association/action/create"
+	deleteObjectInstanceAssociationsPattern = "/api/v3/inst/associations/action/delete"
 )
 
 var (
@@ -639,6 +640,19 @@ func (ps *parseStream) objectInstanceAssociation() *parseStream {
 				Basic: meta.Basic{
 					Type:   meta.ModelInstanceAssociation,
 					Action: meta.Create,
+				},
+			},
+		}
+		return ps
+	}
+
+	// delete object's instance associations operation.
+	if ps.RequestCtx.URI == deleteObjectInstanceAssociationsPattern && ps.RequestCtx.Method == http.MethodDelete {
+		ps.Attribute.Resources = []meta.ResourceAttribute{
+			{
+				Basic: meta.Basic{
+					Type:   meta.ModelInstanceAssociation,
+					Action: meta.DeleteMany,
 				},
 			},
 		}

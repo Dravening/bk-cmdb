@@ -358,3 +358,16 @@ func (s *Service) DeleteAssociationInst(params types.ContextParams, pathParams, 
 
 	}
 }
+
+func (s *Service) DeleteAssociationsInst(params types.ContextParams, pathParams, queryParams ParamsGetter, data mapstr.MapStr) (interface{}, error) {
+	request := &metadata.DeleteAssociationInstRequest{}
+	if err := data.MarshalJSONInto(request); err != nil {
+		return nil, params.Err.New(common.CCErrCommParamsInvalid, err.Error())
+	}
+
+	resp, err := s.Core.AssociationOperation().DeleteInstAssociations(params, &metadata.DeleteAssociationInstRequest{Condition: request.Condition})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Data, nil
+}

@@ -13,6 +13,8 @@
 package service
 
 import (
+	"configcenter/src/common"
+	"configcenter/src/common/blog"
 	"configcenter/src/common/mapstr"
 	"configcenter/src/common/metadata"
 	"configcenter/src/source_controller/coreservice/core"
@@ -195,4 +197,30 @@ func (s *coreService) DeleteInstanceAssociation(params core.ContextParams, pathP
 		return nil, err
 	}
 	return s.core.AssociationOperation().DeleteInstanceAssociation(params, inputData)
+}
+
+func (s *coreService) DeleteInstanceAssociations(ctx core.ContextParams, pathParams, queryParams ParamsGetter, data mapstr.MapStr) (interface{}, error) {
+
+	inputData := metadata.DeleteOption{}
+	if err := data.MarshalJSONInto(&inputData); nil != err {
+		return nil, err
+	}
+	objID := inputData.Condition[common.BKObjIDField]
+	instID := inputData.Condition[common.BKInstIDField]
+
+	countBKObjID, err := s.core.AssociationOperation().DeleteInstanceAssociation(ctx, inputData)
+	if nil != err {
+		blog.Errorf("delete instance association error %v, rid: %s", err, ctx.ReqID)
+		return nil, err
+	}
+
+	bkAsstObjIDCond := metadata.DeleteOption{Condition: mapstr.MapStr{common.BKAsstObjIDField: objID, common.BKAsstInstIDField: instID}}
+	countBKAsstObjID, err := s.core.AssociationOperation().DeleteInstanceAssociation(ctx, bkAsstObjIDCond)
+	if nil != err {
+		blog.Errorf("delete instance to association error %v, rid: %s", err, ctx.ReqID)
+		return nil, err
+	}
+
+	cnt := countBKObjID.Count + countBKAsstObjID.Count
+	return &metadata.DeletedCount{Count: cnt}, nil
 }
