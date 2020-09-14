@@ -472,6 +472,42 @@ func (s *Service) DeleteAssociationInst(ctx *rest.Contexts) {
 	ctx.RespEntity(ret.Data)
 }
 
+//Delete all associations of certain model instance,by regarding the instance as both Association source and Association target.
+//Will delete no more than 500 associations in one operation.
+func (s *Service) DeleteAssociationRelatedInst(ctx *rest.Contexts) {
+	request := &metadata.DeleteAssociationRelatedInstRequest{}
+	if err := ctx.DecodeInto(request); err != nil {
+		ctx.RespAutoError(ctx.Kit.CCError.New(common.CCErrCommParamsInvalid, err.Error()))
+		return
+	}
+	//check condition
+	if request.InstID == 0 || request.ObjectID == "" {
+		ctx.RespAutoError(ctx.Kit.CCError.New(common.CCErrCommParamsInvalid, "'bk_inst_id' and 'bk_obj_id' should not be empty."))
+		return
+	}
+
+	var ret *metadata.DeleteAssociationInstResult
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+		var err error
+		ret, err = s.Core.AssociationOperation().DeleteAssociationRelatedInst(ctx.Kit, request)
+		if err != nil {
+			return err
+		}
+
+		if ret.Code != 0 {
+			return ctx.Kit.CCError.New(ret.Code, ret.ErrMsg)
+		}
+
+		return nil
+	})
+
+	if txnErr != nil {
+		ctx.RespAutoError(txnErr)
+		return
+	}
+	ctx.RespEntity(ret.Data)
+}
+
 func (s *Service) SearchTopoPath(ctx *rest.Contexts) {
 	rid := ctx.Kit.Rid
 

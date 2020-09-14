@@ -414,9 +414,10 @@ func (ps *parseStream) objectAssociationLatest() *parseStream {
 }
 
 const (
-	findObjectInstanceAssociationLatestPattern        = "/api/v3/find/instassociation"
-	findObjectInstanceAssociationRelatedLatestPattern = "/api/v3/find/instassociation/related"
-	createObjectInstanceAssociationLatestPattern      = "/api/v3/create/instassociation"
+	findObjectInstanceAssociationLatestPattern          = "/api/v3/find/instassociation"
+	findObjectInstanceAssociationRelatedLatestPattern   = "/api/v3/find/instassociation/related"
+	createObjectInstanceAssociationLatestPattern        = "/api/v3/create/instassociation"
+	deleteObjectInstanceAssociationRelatedLatestPattern = "/api/v3/delete/instassociation/related"
 )
 
 var (
@@ -444,7 +445,7 @@ func (ps *parseStream) objectInstanceAssociationLatest() *parseStream {
 		return ps
 	}
 
-	// find instance's association operation.
+	// find instance's related association operation.
 	if ps.hitPattern(findObjectInstanceAssociationRelatedLatestPattern, http.MethodPost) {
 		ps.Attribute.Resources = []meta.ResourceAttribute{
 			{
@@ -538,6 +539,20 @@ func (ps *parseStream) objectInstanceAssociationLatest() *parseStream {
 					Layers:     []meta.Item{{Type: meta.Model, InstanceID: model.ID}},
 					BusinessID: ps.RequestCtx.BizID,
 				})
+		}
+		return ps
+	}
+
+	// delete object's instance related associations.
+	if ps.hitPattern(deleteObjectInstanceAssociationRelatedLatestPattern, http.MethodDelete) {
+		ps.Attribute.Resources = []meta.ResourceAttribute{
+			{
+				BusinessID: ps.RequestCtx.BizID,
+				Basic: meta.Basic{
+					Type:   meta.ModelInstanceAssociation,
+					Action: meta.Delete,
+				},
+			},
 		}
 		return ps
 	}

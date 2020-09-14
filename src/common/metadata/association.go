@@ -99,7 +99,7 @@ type DeleteAssociationObjectResult struct {
 	Data     string `json:"data"`
 }
 
-type SearchAssociationRelatedInstRequestCond struct {
+type AssociationRelatedInstRequestCond struct {
 	ObjectID string `field:"bk_obj_id" json:"bk_obj_id,omitempty" bson:"bk_obj_id,omitempty"`
 	InstID   int64  `field:"bk_inst_id" json:"bk_inst_id,omitempty" bson:"bk_inst_id,omitempty"`
 }
@@ -109,9 +109,9 @@ type SearchAssociationInstRequest struct {
 }
 
 type SearchAssociationRelatedInstRequest struct {
-	Fields    []string                                `json:"fields"`
-	Page      BasePage                                `json:"page"`
-	Condition SearchAssociationRelatedInstRequestCond `json:"condition"`
+	Fields    []string                          `json:"fields"`
+	Page      BasePage                          `json:"page"`
+	Condition AssociationRelatedInstRequestCond `json:"condition"`
 }
 
 type SearchAssociationInstResult struct {
@@ -136,6 +136,10 @@ type DeleteAssociationInstRequest struct {
 type DeleteAssociationInstResult struct {
 	BaseResp `json:",inline"`
 	Data     string `json:"data"`
+}
+
+type DeleteAssociationRelatedInstRequest struct {
+	AssociationRelatedInstRequestCond `json:",inline"`
 }
 
 type AssociationKindIDs struct {

@@ -70,6 +70,7 @@ type AssociationOperationInterface interface {
 	SearchAssociationRelatedInst(kit *rest.Kit, request *metadata.SearchAssociationRelatedInstRequest) (resp *metadata.SearchAssociationInstResult, err error)
 	CreateInst(kit *rest.Kit, request *metadata.CreateAssociationInstRequest) (resp *metadata.CreateAssociationInstResult, err error)
 	DeleteInst(kit *rest.Kit, assoID int64) (resp *metadata.DeleteAssociationInstResult, err error)
+	DeleteAssociationRelatedInst(kit *rest.Kit, request *metadata.DeleteAssociationRelatedInstRequest) (resp *metadata.DeleteAssociationInstResult, err error)
 
 	ImportInstAssociation(ctx context.Context, kit *rest.Kit, objID string, importData map[int]metadata.ExcelAssocation, languageIf language.CCLanguageIf) (resp metadata.ResponeImportAssociationData, err error)
 
@@ -904,11 +905,11 @@ func (assoc *association) DeleteInst(kit *rest.Kit, assoID int64) (resp *metadat
 	cond.Field(common.AssociationObjAsstIDField).Eq(instanceAssociation.ObjectAsstID)
 	assInfoResult, err := assoc.SearchObject(kit, &metadata.SearchAssociationObjectRequest{Condition: cond.ToMapStr()})
 	if err != nil {
-		blog.Errorf("create association instance, but search object association with cond[%v] failed, err: %v, rid: %s", cond, err, kit.Rid)
+		blog.Errorf("delete instance association, but search object association with cond[%v] failed, err: %v, rid: %s", cond, err, kit.Rid)
 		return nil, kit.CCError.Error(common.CCErrCommHTTPDoRequestFailed)
 	}
 	if !assInfoResult.Result {
-		blog.Errorf("create association instance, but search object association with cond[%v] failed, err: %s, rid: %s", cond, assInfoResult.ErrMsg, kit.Rid)
+		blog.Errorf("delete instance association, but search object association with cond[%v] failed, err: %s, rid: %s", cond, assInfoResult.ErrMsg, kit.Rid)
 		return nil, assInfoResult.CCError()
 	}
 
@@ -959,6 +960,102 @@ func (assoc *association) DeleteInst(kit *rest.Kit, assoID int64) (resp *metadat
 	if !auditResp.Result {
 		blog.Errorf("DeleteInst finished, but save audit log failed, err: %+v, rid: %s", auditResp.ErrMsg, kit.Rid)
 		return nil, kit.CCError.New(auditResp.Code, auditResp.ErrMsg)
+	}
+
+	return resp, nil
+}
+
+//Delete all associations of certain model instance,by regarding the instance as both Association source and Association target.
+//Will find no more than 500 associations ,and then delete them by id.
+func (assoc *association) DeleteAssociationRelatedInst(kit *rest.Kit, request *metadata.DeleteAssociationRelatedInstRequest) (resp *metadata.DeleteAssociationInstResult, err error) {
+	searchCondition := &metadata.QueryCondition{
+		Fields: []string{},
+		Page: metadata.BasePage{
+			Sort:  common.BKFieldID,
+			Limit: 500,
+			Start: 0,
+		},
+	}
+	searchCondition.Condition = mapstr.MapStr{
+		condition.BKDBOR: []mapstr.MapStr{
+			{
+				common.BKObjIDField:  request.ObjectID,
+				common.BKInstIDField: request.InstID,
+			},
+			{
+				common.BKAsstObjIDField:  request.ObjectID,
+				common.BKAsstInstIDField: request.InstID,
+			},
+		},
+	}
+
+	// get info to record audit log
+	data, err := assoc.clientSet.CoreService().Association().ReadInstAssociation(context.Background(), kit.Header, searchCondition)
+	if err != nil {
+		blog.Errorf("Delete instance related associations failed, get instance association failed, kit: %+v, err: %+v, rid: %s", kit, err, kit.Rid)
+		return nil, err
+	}
+	if len(data.Data.Info) == 0 {
+		blog.Errorf("Delete instance related associations failed, instance association not found, searchCondition: %+v, err: %+v, rid: %s", searchCondition, err, kit.Rid)
+		return nil, kit.CCError.Error(common.CCErrCommNotFound)
+	}
+
+	//instanceAssociation := metadata.InstAsst{}
+	input := metadata.DeleteOption{}
+	rsp := &metadata.DeletedOptionResult{}
+	count := 0
+
+	for _, instAsst := range data.Data.Info {
+		input.Condition = condition.CreateCondition().Field(common.BKFieldID).Eq(instAsst.ID).ToMapStr()
+		rsp, err = assoc.clientSet.CoreService().Association().DeleteInstAssociation(context.Background(), kit.Header, &input)
+		if err != nil {
+			blog.ErrorJSON("Delete instance related associations failed, err: %s, input: %s, rid: %s", err, input, kit.Rid)
+			return nil, kit.CCError.CCError(common.CCErrCommHTTPDoRequestFailed)
+		}
+
+		audit := auditlog.NewAudit(assoc.clientSet, kit.Header)
+		srcInstName, err := audit.GetInstNameByID(kit.Ctx, instAsst.ObjectID, instAsst.InstID)
+		if err != nil {
+			return nil, kit.CCError.CCError(common.CCErrAuditTakeSnapshotFailed)
+		}
+		targetInstName, err := audit.GetInstNameByID(kit.Ctx, instAsst.AsstObjectID, instAsst.AsstInstID)
+		if err != nil {
+			return nil, kit.CCError.CCError(common.CCErrAuditTakeSnapshotFailed)
+		}
+		auditLog := metadata.AuditLog{
+			AuditType:    metadata.ModelInstanceType,
+			ResourceType: metadata.InstanceAssociationRes,
+			Action:       metadata.AuditDelete,
+			OperationDetail: &metadata.InstanceAssociationOpDetail{
+				AssociationOpDetail: metadata.AssociationOpDetail{
+					AssociationID:   instAsst.ObjectAsstID,
+					AssociationKind: instAsst.AssociationKindID,
+					SourceModelID:   instAsst.ObjectID,
+					TargetModelID:   instAsst.AsstObjectID,
+				},
+				SourceInstanceID:   instAsst.InstID,
+				SourceInstanceName: srcInstName,
+				TargetInstanceID:   instAsst.AsstInstID,
+				TargetInstanceName: targetInstName,
+			},
+			OperationTime: metadata.Now(),
+		}
+		auditResp, err := assoc.clientSet.CoreService().Audit().SaveAuditLog(kit.Ctx, kit.Header, auditLog)
+		if err != nil {
+			blog.Errorf("Delete instance related association finished, but save audit log failed, err: %v, rid: %s", err, kit.Rid)
+			return nil, kit.CCError.Error(common.CCErrAuditSaveLogFailed)
+		}
+		if !auditResp.Result {
+			blog.Errorf("Delete instance related association finished, but save audit log failed, err: %+v, rid: %s", auditResp.ErrMsg, kit.Rid)
+			return nil, kit.CCError.New(auditResp.Code, auditResp.ErrMsg)
+		}
+		count = count + 1
+
+	}
+	countStr := fmt.Sprintf("Successfully deleted %d association record.", count)
+	resp = &metadata.DeleteAssociationInstResult{
+		BaseResp: rsp.BaseResp,
+		Data:     countStr,
 	}
 
 	return resp, nil
