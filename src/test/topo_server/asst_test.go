@@ -5,6 +5,7 @@ import (
 
 	"configcenter/src/common/metadata"
 	commonutil "configcenter/src/common/util"
+	"configcenter/src/test"
 	"configcenter/src/test/util"
 
 	. "github.com/onsi/ginkgo"
@@ -15,6 +16,7 @@ var _ = Describe("inst test", func() {
 	var switchInstId1, switchInstId2, routerInstId1 int64
 
 	It("create inst bk_obj_id='bk_switch'", func() {
+		test.ClearDatabase()
 		input := map[string]interface{}{
 			"bk_asset_id":  "101",
 			"bk_inst_name": "switch_1",
@@ -124,7 +126,7 @@ var _ = Describe("inst test", func() {
 				Start: 0,
 				Limit: 10,
 			},
-			Condition: metadata.SearchAssociationRelatedInstRequestCond{
+			Condition: metadata.AssociationRelatedInstRequestCond{
 				ObjectID: "bk_router",
 				InstID:   routerInstId1,
 			},
@@ -151,7 +153,7 @@ var _ = Describe("inst test", func() {
 				Start: 0,
 				Limit: 501,
 			},
-			Condition: metadata.SearchAssociationRelatedInstRequestCond{
+			Condition: metadata.AssociationRelatedInstRequestCond{
 				ObjectID: "bk_router",
 				InstID:   routerInstId1,
 			},
@@ -167,9 +169,9 @@ var _ = Describe("inst test", func() {
 			Fields: []string{},
 			Page: metadata.BasePage{
 				Start: 0,
-				Limit: 501,
+				Limit: 10,
 			},
-			Condition: metadata.SearchAssociationRelatedInstRequestCond{
+			Condition: metadata.AssociationRelatedInstRequestCond{
 				ObjectID: "bk_router",
 				InstID:   routerInstId1,
 			},
@@ -178,6 +180,42 @@ var _ = Describe("inst test", func() {
 		util.RegisterResponse(rsp)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(rsp.Result).To(Equal(false))
+	})
+	//check "DeleteAssociationRelatedInst" features available
+	It("delete inst association related", func() {
+		input := &metadata.DeleteAssociationRelatedInstRequest{}
+		input.ObjectID = "bk_router"
+		input.InstID = 3
+
+		rsp, err := asstClient.DeleteAssociationRelatedInst(context.Background(), header, input)
+		util.RegisterResponse(rsp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rsp.Result).To(Equal(true))
+		Expect(rsp.Data).To(Equal("Successfully deleted 2 association record."))
+
+		searchInput := &metadata.SearchAssociationRelatedInstRequest{
+			Fields: []string{
+				"bk_asst_id",
+				"bk_inst_id",
+				"bk_obj_id",
+				"bk_asst_inst_id",
+				"bk_asst_obj_id",
+				"bk_obj_asst_id",
+			},
+			Page: metadata.BasePage{
+				Start: 0,
+				Limit: 10,
+			},
+			Condition: metadata.AssociationRelatedInstRequestCond{
+				ObjectID: "bk_router",
+				InstID:   routerInstId1,
+			},
+		}
+		searchRsp, err := asstClient.SearchAssociationRelatedInst(context.Background(), header, searchInput)
+		util.RegisterResponse(searchRsp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(searchRsp.Result).To(Equal(true))
+		Expect(len(searchRsp.Data)).To(Equal(0))
 	})
 
 })

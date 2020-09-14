@@ -177,6 +177,21 @@ func (asst *Association) CreateInst(ctx context.Context, h http.Header, request 
 
 	return
 }
+func (asst *Association) DeleteAssociationRelatedInst(ctx context.Context, h http.Header, request *metadata.DeleteAssociationRelatedInstRequest) (resp *metadata.DeleteAssociationInstResult, err error) {
+	resp = new(metadata.DeleteAssociationInstResult)
+	subPath := "/inst/association/related/action/delete"
+
+	err = asst.client.Delete().
+		WithContext(ctx).
+		Body(request).
+		SubResourcef(subPath).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+
+	return
+}
+
 func (asst *Association) DeleteInst(ctx context.Context, h http.Header, assoID int64) (resp *metadata.DeleteAssociationInstResult, err error) {
 	resp = new(metadata.DeleteAssociationInstResult)
 	subPath := "/inst/association/%d/action/delete"
