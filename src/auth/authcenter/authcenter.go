@@ -192,6 +192,7 @@ func (ac *AuthCenter) Authorize(ctx context.Context, a *meta.AuthAttribute) (dec
 		blog.V(5).Infof("Authorize skip. auth attribute: %+v", a)
 		return meta.Decision{Authorized: true}, nil
 	}
+	blog.V(5).Infof("Authorize start. auth attribute: %+v", a)
 	batchresult, err := ac.AuthorizeBatch(ctx, a.User, a.Resources...)
 	if err != nil {
 		blog.Errorf("AuthorizeBatch error. err:%s", err.Error())
