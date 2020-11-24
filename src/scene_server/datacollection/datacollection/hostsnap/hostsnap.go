@@ -220,7 +220,7 @@ func parseSetter(val *gjson.Result, innerIP, outerIP string) map[string]interfac
 	var CPUMhz = val.Get("data.cpu.cpuinfo.0.mhz").Int()
 	var disk uint64
 	for _, disktotal := range val.Get("data.disk.usage.#.total").Array() {
-		disk += disktotal.Uint() >> 10 >> 10 >>10
+		disk += disktotal.Uint() >> 10 >> 10 >> 10
 	}
 	var mem = val.Get("data.mem.meminfo.total").Uint()
 	var hostname = val.Get("data.system.info.hostname").String()
@@ -259,25 +259,20 @@ func parseSetter(val *gjson.Result, innerIP, outerIP string) map[string]interfac
 
 	osbit := val.Get("data.system.info.systemtype").String()
 
-	dockerClientVersion := val.Get("data.system.docker.Client.Version").String()
-	dockerServerVersion := val.Get("data.system.docker.Server.Version").String()
-
 	mem = mem >> 10 >> 10
 	setter := map[string]interface{}{
-		"bk_cpu":                            cupnum,
-		"bk_cpu_module":                     cpumodule,
-		"bk_cpu_mhz":                        CPUMhz,
-		"bk_disk":                           disk,
-		"bk_mem":                            mem,
-		"bk_os_type":                        ostype,
-		"bk_os_name":                        osname,
-		"bk_os_version":                     version,
-		"bk_host_name":                      hostname,
-		"bk_outer_mac":                      OuterMAC,
-		"bk_mac":                            InnerMAC,
-		"bk_os_bit":                         osbit,
-		common.HostFieldDockerClientVersion: dockerClientVersion,
-		common.HostFieldDockerServerVersion: dockerServerVersion,
+		"bk_cpu":        cupnum,
+		"bk_cpu_module": cpumodule,
+		"bk_cpu_mhz":    CPUMhz,
+		"bk_disk":       disk,
+		"bk_mem":        mem,
+		"bk_os_type":    ostype,
+		"bk_os_name":    osname,
+		"bk_os_version": version,
+		"bk_host_name":  hostname,
+		"bk_outer_mac":  OuterMAC,
+		"bk_mac":        InnerMAC,
+		"bk_os_bit":     osbit,
 	}
 
 	if cupnum <= 0 {
