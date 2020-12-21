@@ -546,7 +546,7 @@ func (ps *parseStream) objectInstanceAssociationLatest() *parseStream {
 				meta.ResourceAttribute{
 					Basic: meta.Basic{
 						Type:       instanceType,
-						Action:     meta.Update,
+						Action:     meta.SkipAction,
 						InstanceID: instID,
 					},
 					Layers:     []meta.Item{{Type: meta.Model, InstanceID: model.ID}},
@@ -631,7 +631,7 @@ func (ps *parseStream) objectInstanceAssociationLatest() *parseStream {
 				meta.ResourceAttribute{
 					Basic: meta.Basic{
 						Type:       instanceType,
-						Action:     meta.Update,
+						Action:     meta.SkipAction,
 						InstanceID: instID,
 					},
 					Layers:     []meta.Item{{Type: meta.Model, InstanceID: model.ID}},
