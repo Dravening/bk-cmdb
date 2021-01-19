@@ -14,6 +14,8 @@ package distribution
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -49,6 +51,21 @@ func (dh *DistHandler) SendCallback(receiver *metadata.Subscription, event strin
 	} else {
 		duration = receiver.GetTimeout()
 	}
+	caCert, err := ioutil.ReadFile("/data/bkee/cert/bk_domain.crt")
+	if err == nil {
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		httpCli.GetClient().Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		}
+	} else {
+		blog.Infof("event distribute processed, get caCert failed: %s", err)
+		err = nil
+		// do nothing
+	}
+
 	resp, err := httpCli.DoWithTimeout(duration, req)
 	if err != nil {
 		return fmt.Errorf("event distribute fail, send request error: %v, data=[%s]", err, event)

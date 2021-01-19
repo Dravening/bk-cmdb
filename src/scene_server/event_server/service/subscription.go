@@ -14,6 +14,9 @@ package service
 
 import (
 	"bytes"
+	"configcenter/src/common/http/httpclient"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"configcenter/src/auth/meta"
 	"configcenter/src/common"
@@ -477,9 +481,26 @@ func (s *Service) Ping(req *restful.Request, resp *restful.Response) {
 	callbackUrl := data.CallbackUrl
 	callbackBody := data.Data
 
+	httpCli := httpclient.NewHttpClient()
+	caCert, err := ioutil.ReadFile("/data/bkee/cert/bk_domain.crt")
+	if err == nil {
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		httpCli.GetClient().Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		}
+	} else {
+
+		blog.Infof("ping processing, get caCert failed: %s", err)
+		err = nil
+		// do nothing
+	}
+
 	blog.Infof("requesting callback url: %s, data: %s, rid: %s", callbackUrl, callbackBody, rid)
 	callbackReq, _ := http.NewRequest(http.MethodPost, callbackUrl, bytes.NewBufferString(callbackBody))
-	callbackResp, err := http.DefaultClient.Do(callbackReq)
+	callbackResp, err := httpCli.DoWithTimeout(time.Second*10, callbackReq)
 	if err != nil {
 		blog.Errorf("test distribute failed, do http request failed, err: %v, rid: %s", err, rid)
 		result := &metadata.RespError{
