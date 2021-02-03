@@ -37,7 +37,6 @@
                                 v-for="(instance, index) in instances"
                                 ref="serviceInstanceTable"
                                 deletable
-                                expanded
                                 :key="instance.bk_host_id"
                                 :index="index"
                                 :id="instance.bk_host_id"
@@ -47,6 +46,7 @@
                                 :addible="!withTemplate"
                                 :editing="getEditState(instance)"
                                 :instance="instance"
+                                @edit-process="handleEditProcess(instance, ...arguments)"
                                 @delete-instance="handleDeleteInstance"
                                 @edit-name="handleEditName(instance)"
                                 @confirm-edit-name="handleConfirmEditName(instance, ...arguments)"
@@ -141,7 +141,8 @@
                 request: {
                     preview: Symbol('review'),
                     hostInfo: Symbol('hostInfo')
-                }
+                },
+                processChangeState: {}
             }
         },
         computed: {
@@ -306,12 +307,6 @@
                 return []
             },
             getSourceProcesses (instance) {
-                const ipMap = {
-                    '1': '127.0.0.1',
-                    '2': '0.0.0.0',
-                    '3': this.$t('第一内网IP'),
-                    '4': this.$t('第一外网IP')
-                }
                 const templates = this.getServiceTemplates(instance)
                 return templates.map(template => {
                     const value = {}
@@ -321,7 +316,7 @@
                             value[key].forEach(row => {
                                 Object.keys(row).forEach(field => {
                                     if (field === 'ip') {
-                                        row[field] = ipMap[row[field].value]
+                                        row[field] = this.getBindIp(instance, row)
                                     } else if (field === 'row_id') {
                                         // 实例数据中使用 template_row_id
                                         row['template_row_id'] = row[field]
@@ -337,6 +332,24 @@
                     })
                     return value
                 })
+            },
+            getBindIp (instance, row) {
+                const ipValue = row.ip.value
+                const mapping = {
+                    1: '127.0.0.1',
+                    2: '0.0.0.0'
+                }
+                if (mapping.hasOwnProperty(ipValue)) {
+                    return mapping[ipValue]
+                }
+                const { host } = this.hosts.find(data => data.host.bk_host_id === instance.bk_host_id)
+                // 第一内网IP
+                if (ipValue === '3') {
+                    const [innerIP] = host.bk_host_innerip.split(',')
+                    return innerIP || mapping[1]
+                }
+                const [outerIP] = host.bk_host_outerip.split(',')
+                return outerIP || mapping[1]
             },
             getEditState (instance) {
                 return instance.editing
@@ -367,11 +380,42 @@
                     }
                 })
             },
+            /**
+             * 解决后端性能问题: 用服务模板生成的实例仅传递有被用户主动触发过编辑的进程信息
+             */
+            getChangedProcessList (instance, component) {
+                if (this.withTemplate) {
+                    const processes = []
+                    const stateKey = `${instance.bk_module_id}-${instance.bk_host_id}`
+                    const changedState = this.processChangeState[stateKey] || new Set()
+                    component.processList.forEach((process, listIndex) => {
+                        if (!changedState.has(listIndex)) return
+                        processes.push({
+                            process_template_id: component.templates[listIndex] ? component.templates[listIndex].id : 0,
+                            process_info: process
+                        })
+                    })
+                    return processes
+                }
+                return component.processList.map((process, listIndex) => ({
+                    process_template_id: component.templates[listIndex] ? component.templates[listIndex].id : 0,
+                    process_info: process
+                }))
+            },
+            /**
+             * 解决后端性能问题: 记录用服务模板生成的实例是否触发编辑动作
+             */
+            handleEditProcess (instance, processIndex) {
+                if (!instance.service_template) return
+                const key = `${instance.bk_module_id}-${instance.bk_host_id}`
+                const state = this.processChangeState[key] || new Set()
+                state.add(processIndex)
+                this.processChangeState[key] = state
+            },
             async handleConfirm () {
                 try {
                     const serviceInstanceTables = this.$refs.serviceInstanceTable
                     const confirmTable = this.$refs.confirmTable
-                    const withTemplate = this.withTemplate
                     const params = {
                         bk_module_id: this.moduleId,
                         bk_biz_id: this.bizId
@@ -382,13 +426,7 @@
                             return {
                                 bk_host_id: table.id,
                                 service_instance_name: instance.name || '',
-                                processes: table.processList.map((item, index) => {
-                                    const process = { process_info: item }
-                                    if (withTemplate) {
-                                        process.process_template_id = table.templates[index].id
-                                    }
-                                    return process
-                                })
+                                processes: this.getChangedProcessList(instance, table)
                             }
                         })
                     }

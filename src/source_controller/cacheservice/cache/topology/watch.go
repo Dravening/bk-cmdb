@@ -79,7 +79,8 @@ func (t *Topology) onSetChange(es []*types.Event) (retry bool) {
 
 		case types.Delete:
 			filter := mapstr.MapStr{
-				"oid": one.Oid,
+				"oid":  one.Oid,
+				"coll": common.BKTableNameBaseSet,
 			}
 			archive := new(setArchive)
 			err := t.db.Table(common.BKTableNameDelArchive).Find(filter).One(context.TODO(), archive)
@@ -161,7 +162,8 @@ func (t *Topology) onModuleChange(es []*types.Event) (retry bool) {
 
 		case types.Delete:
 			filter := mapstr.MapStr{
-				"oid": one.Oid,
+				"oid":  one.Oid,
+				"coll": common.BKTableNameBaseModule,
 			}
 			archive := new(moduleArchive)
 			err := t.db.Table(common.BKTableNameDelArchive).Find(filter).One(context.TODO(), archive)
@@ -212,9 +214,7 @@ func (t *Topology) watchCustom() error {
 					common.BKDBGT: 0,
 				},
 				common.BKParentIDField: mapstr.MapStr{
-					common.BKDBExists: mapstr.MapStr{
-						common.BKDBGT: 0,
-					},
+					common.BKDBGT: 0,
 				},
 				common.BKObjIDField: mapstr.MapStr{
 					common.BKDBExists: true,
@@ -270,7 +270,8 @@ func (t *Topology) onCustomChange(es []*types.Event) (retry bool) {
 
 		case types.Delete:
 			filter := mapstr.MapStr{
-				"oid": one.Oid,
+				"oid":  one.Oid,
+				"coll": common.BKTableNameBaseInst,
 			}
 			archive := new(customArchive)
 			err := t.db.Table(common.BKTableNameDelArchive).Find(filter).One(context.TODO(), archive)

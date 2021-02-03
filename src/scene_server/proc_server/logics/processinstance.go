@@ -106,7 +106,7 @@ func (lgc *Logic) ListProcessInstanceWithIDs(kit *rest.Kit, procIDs []int64) ([]
 
 	if !ret.Result {
 		blog.Errorf("rid: %s list process instance with procID: %d failed, err: %v", kit.Rid, procIDs, ret.ErrMsg)
-		return nil, errors.New(ret.Code, ret.ErrMsg)
+		return nil, ret.CCError()
 	}
 
 	processes := make([]metadata.Process, 0)
@@ -136,7 +136,7 @@ func (lgc *Logic) GetProcessInstanceWithID(kit *rest.Kit, procID int64) (*metada
 
 	if !ret.Result {
 		blog.Errorf("GetProcessInstanceWithID failed, get process instance with procID: %d failed, err: %v, rid: %s", procID, ret.ErrMsg, kit.Rid)
-		return nil, errors.New(ret.Code, ret.ErrMsg)
+		return nil, ret.CCError()
 	}
 
 	process := new(metadata.Process)
@@ -238,14 +238,48 @@ func (lgc *Logic) CreateProcessInstance(kit *rest.Kit, processData map[string]in
 	return int64(result.Data.Created.ID), nil
 }
 
+func (lgc *Logic) CreateProcessInstances(kit *rest.Kit, processDatas []map[string]interface{}) ([]int64, errors.CCErrorCoder) {
+
+	data := make([]mapstr.MapStr, len(processDatas))
+	for idx := range processDatas {
+		data[idx] = processDatas[idx]
+	}
+
+	inputParam := metadata.CreateManyModelInstance{
+		Datas: data,
+	}
+
+	result, err := lgc.CoreAPI.CoreService().Instance().CreateManyInstance(kit.Ctx, kit.Header, common.BKInnerObjIDProc, &inputParam)
+	if err != nil {
+		blog.Errorf("CreateProcessInstances failed, http request failed, err: %+v, inputParam:%#v, rid: %s", err, inputParam, kit.Rid)
+		return nil, errors.CCHttpError
+	}
+	if !result.Result {
+		blog.Errorf("CreateProcessInstances failed, http request failed, err: %+v, inputParam:%#v, rid: %s", result.ErrMsg, inputParam, kit.Rid)
+		return nil, errors.New(result.Code, result.ErrMsg)
+	}
+
+	if len(processDatas) != len(result.Data.Created) {
+		blog.Errorf("CreateProcessInstances failed, len(processes) != len(result.Created), inputParam: %#v, rid: %s", inputParam, kit.Rid)
+		return nil, kit.CCError.CCError(common.CCErrProcCreateProcessFailed)
+	}
+
+	processIDs := make([]int64, len(processDatas))
+	for idx, created := range result.Data.Created {
+		processIDs[idx] = int64(created.ID)
+	}
+
+	return processIDs, nil
+}
+
 // it works to find the different attribute value between the process instance and it's bounded process template.
 // return with the changed attribute's details.
 func (lgc *Logic) DiffWithProcessTemplate(t *metadata.ProcessProperty, i *metadata.Process, host map[string]interface{},
-	attrMap map[string]metadata.Attribute) []metadata.ProcessChangedAttribute {
+	attrMap map[string]metadata.Attribute) ([]metadata.ProcessChangedAttribute, error) {
 
 	changes := make([]metadata.ProcessChangedAttribute, 0)
 	if t == nil || i == nil {
-		return changes
+		return changes, nil
 	}
 
 	if metadata.IsAsDefaultValue(t.ProcNum.AsDefaultValue) {
@@ -331,9 +365,11 @@ func (lgc *Logic) DiffWithProcessTemplate(t *metadata.ProcessProperty, i *metada
 	}
 
 	if metadata.IsAsDefaultValue(t.BindInfo.AsDefaultValue) {
-		newBindInfo, change := t.BindInfo.DiffWithProcessTemplate(i.BindInfo, host)
+		newBindInfo, change, err := t.BindInfo.DiffWithProcessTemplate(i.BindInfo, host)
+		if err != nil {
+			return nil, err
+		}
 		if change {
-
 			changes = append(changes, metadata.ProcessChangedAttribute{
 				ID:                    attrMap[common.BKProcBindInfo].ID,
 				PropertyID:            common.BKProcBindInfo,
@@ -499,5 +535,5 @@ func (lgc *Logic) DiffWithProcessTemplate(t *metadata.ProcessProperty, i *metada
 		}
 	}
 
-	return changes
+	return changes, nil
 }

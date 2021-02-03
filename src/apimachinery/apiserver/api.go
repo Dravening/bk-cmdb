@@ -184,12 +184,42 @@ func (a *apiServer) AddHost(ctx context.Context, h http.Header, params mapstr.Ma
 	return
 }
 
+func (a *apiServer) AddHostByExcel(ctx context.Context, h http.Header, params mapstr.MapStr) (resp *metadata.ResponseDataMapStr, err error) {
+
+	resp = new(metadata.ResponseDataMapStr)
+	subPath := "hosts/excel/add"
+
+	err = a.client.Post().
+		WithContext(ctx).
+		Body(params).
+		SubResourcef(subPath).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+	return
+}
+
 func (a *apiServer) UpdateHost(ctx context.Context, h http.Header, params mapstr.MapStr) (resp *metadata.ResponseDataMapStr, err error) {
 
 	resp = new(metadata.ResponseDataMapStr)
 	subPath := "hosts/update"
 
 	err = a.client.Put().
+		WithContext(ctx).
+		Body(params).
+		SubResourcef(subPath).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+	return
+}
+
+func (a *apiServer) GetHostModuleRelation(ctx context.Context, h http.Header, params mapstr.MapStr) (resp *metadata.HostModuleResp, err error) {
+
+	resp = new(metadata.HostModuleResp)
+	subPath := "/hosts/modules/read"
+
+	err = a.client.Post().
 		WithContext(ctx).
 		Body(params).
 		SubResourcef(subPath).
@@ -245,7 +275,7 @@ func (a *apiServer) SearchAssociationInst(ctx context.Context, h http.Header, re
 
 func (a *apiServer) ImportAssociation(ctx context.Context, h http.Header, objID string, input *metadata.RequestImportAssociation) (resp *metadata.ResponeImportAssociation, err error) {
 	resp = new(metadata.ResponeImportAssociation)
-	subPath := "/inst/association/action/%s/import"
+	subPath := "/import/instassociation/%s"
 
 	err = a.client.Post().
 		WithContext(ctx).

@@ -27,30 +27,6 @@ func (s *Service) SelectObjectTopoGraphics(ctx *rest.Contexts) {
 	ctx.RespEntity(resp)
 }
 
-func (s *Service) UpdateObjectTopoGraphics(ctx *rest.Contexts) {
-	requestBody := struct {
-		Data []metadata.TopoGraphics `json:"data" field:"data"`
-	}{}
-	if err := ctx.DecodeInto(&requestBody); err != nil {
-		ctx.RespAutoError(err)
-		return
-	}
-
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
-		err := s.Core.GraphicsOperation().UpdateObjectTopoGraphics(ctx.Kit, ctx.Request.PathParameter("scope_type"), ctx.Request.PathParameter("scope_id"), requestBody.Data)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if txnErr != nil {
-		ctx.RespAutoError(txnErr)
-		return
-	}
-	ctx.RespEntity(nil)
-}
-
 func (s *Service) UpdateObjectTopoGraphicsNew(ctx *rest.Contexts) {
 	input := metadata.UpdateTopoGraphicsInput{}
 	err := ctx.DecodeInto(&input)
@@ -59,7 +35,7 @@ func (s *Service) UpdateObjectTopoGraphicsNew(ctx *rest.Contexts) {
 		return
 	}
 
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		err := s.Core.GraphicsOperation().UpdateObjectTopoGraphics(ctx.Kit, ctx.Request.PathParameter("scope_type"), ctx.Request.PathParameter("scope_id"), input.Origin)
 		if err != nil {
 			return err

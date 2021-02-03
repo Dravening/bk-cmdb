@@ -23,6 +23,7 @@ import (
 	"configcenter/src/common"
 	"configcenter/src/common/blog"
 	"configcenter/src/storage/stream/types"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -43,7 +44,7 @@ func init() {
 		panic("initial NoEventCursor failed")
 	}
 	// cursor should be:
-	// MQ0xDTENMQ01ZWE2ZDNmMzk0YzFmNWQ5ODZlOWJkODY=
+	// MQ0xDTVlYTZkM2YzOTRjMWY1ZDk4NmU5YmQ4Ng0xDTE=
 	NoEventCursor = cursor
 }
 
@@ -241,7 +242,6 @@ func (c *Cursor) Decode(cur string) error {
 		return fmt.Errorf("got invalid nano field %s, err: %v", elements[4], err)
 	}
 	c.ClusterTime.Nano = uint32(nano)
-
 	return nil
 }
 

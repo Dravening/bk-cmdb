@@ -41,6 +41,11 @@ type LoopsWatch struct {
 
 // WithOne allows users to watch events one by one.
 func (lw *LoopsWatch) WithOne(opts *types.LoopOneOptions) error {
+	if err := opts.Validate(); err != nil {
+		blog.Errorf("run loop watch, but option is invalid, err: %v", err)
+		return err
+	}
+
 	startToken, err := opts.TokenHandler.GetStartWatchToken(context.Background())
 	if err != nil {
 		blog.Errorf("%s job, run loop watch %s, but get start token failed, err: %v", opts.Name,
@@ -85,9 +90,14 @@ func (lw *LoopsWatch) WithOne(opts *types.LoopOneOptions) error {
 
 // WithBatch allows users to watch events with batch.
 func (lw *LoopsWatch) WithBatch(opts *types.LoopBatchOptions) error {
+	if err := opts.Validate(); err != nil {
+		blog.Errorf("run loop watch batch, but option is invalid, err: %v", err)
+		return err
+	}
+
 	startToken, err := opts.TokenHandler.GetStartWatchToken(context.Background())
 	if err != nil {
-		blog.Errorf("%s job, run loop watch batch %s, but get start token failed, err: %v",
+		blog.Errorf("%s job, run loop watch batch %s, but get start token failed, err: %v", opts.Name,
 			opts.WatchOpt.Collection, err)
 		return err
 	}
@@ -288,6 +298,9 @@ func (lw *LoopsWatch) tryLoopWithBatch(ctxWithCancel context.Context,
 			// save the event token now.
 		}
 
+		// reset retry counter so that the previous retry count will not affect the next event
+		retryObserver.resetRetryCounter()
+
 		last := batchEvents[len(batchEvents)-1]
 		// update the last watched token for resume usage.
 		if err := opts.TokenHandler.SetLastWatchToken(ctxWithCancel, last.Token.Data); err != nil {
@@ -356,6 +369,9 @@ func (lw *LoopsWatch) tryLoopWithOne(ctxWithCancel context.Context,
 				opts.WatchOpt.Collection, one.String(), one.ID())
 			// save the event token now.
 		}
+
+		// reset retry counter so that the previous retry count will not affect the next event
+		retryObserver.resetRetryCounter()
 
 		// update the last watched token for resume usage.
 		if err := opts.TokenHandler.SetLastWatchToken(ctxWithCancel, one.Token.Data); err != nil {
@@ -433,6 +449,10 @@ func (r *retryHandler) canStillRetry() bool {
 	}
 
 	return true
+}
+
+func (r *retryHandler) resetRetryCounter() {
+	r.retryCounter = 0
 }
 
 type observer struct {

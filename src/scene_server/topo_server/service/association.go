@@ -47,7 +47,7 @@ func (s *Service) CreateMainLineObject(ctx *rest.Contexts) {
 	}
 
 	var ret model.Object
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		var err error
 		ret, err = s.Core.AssociationOperation().CreateMainlineAssociation(ctx.Kit, mainLineAssociation, s.Config.BusinessTopoLevelMax)
 		if err != nil {
@@ -70,7 +70,7 @@ func (s *Service) DeleteMainLineObject(ctx *rest.Contexts) {
 	objID := ctx.Request.PathParameter("bk_obj_id")
 
 	// do with transaction
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		if err := s.Core.AssociationOperation().DeleteMainlineAssociation(ctx.Kit, objID); err != nil {
 			blog.Errorf("DeleteMainlineAssociation failed, err: %+v, rid: %s", err, ctx.Kit.Rid)
 			return ctx.Kit.CCError.CCError(common.CCErrTopoObjectDeleteFailed)
@@ -462,33 +462,6 @@ func (s *Service) constructBizTopo(setDetail, moduleDetail, hostDetail map[int64
 	return bizTopo
 }
 
-// SearchMainLineChildInstTopo search the child inst topo by a inst
-func (s *Service) SearchMainLineChildInstTopo(ctx *rest.Contexts) {
-
-	// {obj_id}/{app_id}/{inst_id}
-	objID := ctx.Request.PathParameter("obj_id")
-	bizID, err := strconv.ParseInt(ctx.Request.PathParameter("app_id"), 10, 64)
-	if nil != err {
-		ctx.RespAutoError(ctx.Kit.CCError.CCErrorf(common.CCErrCommParamsIsInvalid, "app_id"))
-		return
-	}
-
-	// get the instance id of this object.
-	instID, err := strconv.ParseInt(ctx.Request.PathParameter("inst_id"), 10, 64)
-	if nil != err {
-		ctx.RespAutoError(ctx.Kit.CCError.CCErrorf(common.CCErrCommParamsIsInvalid, "inst_id"))
-		return
-	}
-	_ = bizID
-
-	resp, err := s.Core.AssociationOperation().SearchMainlineAssociationInstTopo(ctx.Kit, objID, instID, false, false)
-	if nil != err {
-		ctx.RespAutoError(err)
-		return
-	}
-	ctx.RespEntity(resp)
-}
-
 func (s *Service) SearchAssociationType(ctx *rest.Contexts) {
 	request := &metadata.SearchAssociationTypeRequest{}
 	if err := ctx.DecodeInto(request); err != nil {
@@ -537,7 +510,7 @@ func (s *Service) CreateAssociationType(ctx *rest.Contexts) {
 	}
 
 	var ret *metadata.CreateAssociationTypeResult
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		var err error
 		ret, err = s.Core.AssociationOperation().CreateType(ctx.Kit, request)
 		if err != nil {
@@ -586,7 +559,7 @@ func (s *Service) UpdateAssociationType(ctx *rest.Contexts) {
 	}
 
 	var ret *metadata.UpdateAssociationTypeResult
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		var err error
 		ret, err = s.Core.AssociationOperation().UpdateType(ctx.Kit, asstTypeID, request)
 		if err != nil {
@@ -614,7 +587,7 @@ func (s *Service) DeleteAssociationType(ctx *rest.Contexts) {
 	}
 
 	var ret *metadata.DeleteAssociationTypeResult
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		var err error
 		ret, err = s.Core.AssociationOperation().DeleteType(ctx.Kit, asstTypeID)
 		if err != nil {
@@ -703,7 +676,7 @@ func (s *Service) CreateAssociationInst(ctx *rest.Contexts) {
 	}
 
 	var ret *metadata.CreateAssociationInstResult
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		var err error
 		ret, err = s.Core.AssociationOperation().CreateInst(ctx.Kit, request)
 		if err != nil {
@@ -731,7 +704,7 @@ func (s *Service) DeleteAssociationInst(ctx *rest.Contexts) {
 	}
 
 	var ret *metadata.DeleteAssociationInstResult
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		var err error
 		ret, err = s.Core.AssociationOperation().DeleteInst(ctx.Kit, id)
 		if err != nil {
@@ -768,7 +741,7 @@ func (s *Service) DeleteAssociationInstBatch(ctx *rest.Contexts) {
 		return
 	}
 
-	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, s.EnableTxn, ctx.Kit.Header, func() error {
+	txnErr := s.Engine.CoreAPI.CoreService().Txn().AutoRunTxn(ctx.Kit.Ctx, ctx.Kit.Header, func() error {
 		for _, id := range request.ID {
 			var ret *metadata.DeleteAssociationInstResult
 			var err error

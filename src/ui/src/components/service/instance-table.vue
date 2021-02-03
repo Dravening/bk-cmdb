@@ -23,13 +23,13 @@
             </div>
         </div>
         <bk-table class="service-table"
-            v-show="localExpanded"
+            v-if="localExpanded"
             :data="processList">
             <bk-table-column v-for="column in header"
                 :key="column.id"
                 :prop="column.id"
                 :label="column.name"
-                show-overflow-tooltip>
+                :show-overflow-tooltip="column.property.bk_property_type !== 'table'">
                 <template slot-scope="{ row }">
                     <cmdb-property-value v-if="column.id !== 'bind_info'"
                         :value="row[column.id]"
@@ -138,7 +138,8 @@
                 default () {
                     return {}
                 }
-            }
+            },
+            bizId: Number
         },
         data () {
             return {
@@ -213,6 +214,7 @@
                     type: 'create',
                     title: this.$t('添加进程'),
                     hostId: this.id,
+                    bizId: this.bizId,
                     submitHandler: values => {
                         this.processList.push(values)
                     }
@@ -226,10 +228,12 @@
                     serviceTemplateId: this.templates[rowIndex] ? this.templates[rowIndex].service_template_id : 0,
                     processTemplateId: this.templates[rowIndex] ? this.templates[rowIndex].id : 0,
                     hostId: this.id,
+                    bizId: this.bizId,
                     submitHandler: (values, changedValues, raw) => {
                         Object.assign(raw, changedValues)
                     }
                 })
+                this.$emit('edit-process', rowIndex)
             },
             handleDeleteProcess (rowIndex) {
                 this.processList.splice(rowIndex, 1)

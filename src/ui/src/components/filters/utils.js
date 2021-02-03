@@ -15,6 +15,11 @@ export function getBindProps (property) {
             options: property.option || []
         }
     }
+    if (type === 'objuser') {
+        return {
+            fastSelect: true
+        }
+    }
     return {}
 }
 
@@ -224,7 +229,9 @@ export function defineProperty (definition) {
 
 export function getUniqueProperties (preset, dynamic) {
     const unique = dynamic.filter(property => !preset.includes(property))
-    return [...preset, ...unique]
+    const full = [...preset, ...unique]
+    const ids = [...new Set(full.map(property => property.id))]
+    return ids.map(id => full.find(property => property.id === id))
 }
 
 function getPropertyPriority (property) {

@@ -59,6 +59,7 @@ const (
 
 type HostList struct {
 	ApplicationID int64                            `json:"bk_biz_id"`
+	ModuleID      int64                            `json:"bk_module_id"`
 	HostInfo      map[int64]map[string]interface{} `json:"host_info"`
 	InputType     HostInputType                    `json:"input_type"`
 }
@@ -133,13 +134,6 @@ type SetCommonSearch struct {
 	AppID     int64             `json:"bk_biz_id,omitempty"`
 	Condition []SearchCondition `json:"condition"`
 	Page      BasePage          `json:"page"`
-}
-
-type HostModuleFind struct {
-	ModuleIDS []int64  `json:"bk_module_ids"`
-	AppID     int64    `json:"bk_biz_id"`
-	Fields    []string `json:"fields"`
-	Page      BasePage `json:"page"`
 }
 
 type FindHostsBySrvTplOpt struct {
@@ -514,10 +508,14 @@ type SetHostConfigParams struct {
 }
 
 type CloneHostPropertyParams struct {
-	AppID   int64  `json:"bk_biz_id"`
-	OrgIP   string `json:"bk_org_ip"`
-	DstIP   string `json:"bk_dst_ip"`
-	CloudID int64  `json:"bk_cloud_id"`
+	AppID int64 `json:"bk_biz_id"`
+	// source and destination host inner ip
+	OrgIP string `json:"bk_org_ip"`
+	DstIP string `json:"bk_dst_ip"`
+	// source and destination host id
+	OrgID   int64 `json:"bk_org_id"`
+	DstID   int64 `json:"bk_dst_id"`
+	CloudID int64 `json:"bk_cloud_id"`
 }
 
 // TransferHostAcrossBusinessParameter Transfer host across business request parameter

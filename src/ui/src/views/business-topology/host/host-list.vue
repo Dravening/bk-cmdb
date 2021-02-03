@@ -86,8 +86,8 @@
                     pagination: this.$tools.getDefaultPaginationConfig()
                 },
                 dialog: {
-                    width: 720,
-                    height: 460,
+                    width: 830,
+                    height: 600,
                     show: false,
                     component: null,
                     props: {}
@@ -312,14 +312,15 @@
                     }
                 }
                 this.dialog.props = props
-                this.dialog.width = 720
-                this.dialog.height = 460
+                this.dialog.width = 830
+                this.dialog.height = 600
                 this.dialog.component = ModuleSelector.name
                 this.dialog.show = true
             },
             openResourceConfirm () {
                 this.dialog.props = {
-                    count: this.table.selection.length
+                    count: this.table.selection.length,
+                    bizId: this.bizId
                 }
                 this.dialog.width = 400
                 this.dialog.height = 250
@@ -327,9 +328,12 @@
                 this.dialog.show = true
             },
             openAcrollBusinessModuleSelector () {
-                this.dialog.props = {}
-                this.dialog.width = 720
-                this.dialog.height = 460
+                this.dialog.props = {
+                    title: this.$t('转移主机到其他业务'),
+                    business: this.currentBusiness
+                }
+                this.dialog.width = 830
+                this.dialog.height = 600
                 this.dialog.component = AcrossBusinessModuleSelector.name
                 this.dialog.show = true
             },

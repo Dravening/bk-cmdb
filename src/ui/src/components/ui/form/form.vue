@@ -18,7 +18,10 @@
                                         <span class="property-name-text" :class="{ required: isRequired(property) }">{{property['bk_property_name']}}</span>
                                         <i class="property-name-tooltips icon-cc-tips"
                                             v-if="property['placeholder']"
-                                            v-bk-tooltips="htmlEncode(property['placeholder'])">
+                                            v-bk-tooltips="{
+                                                trigger: 'click',
+                                                content: htmlEncode(property['placeholder'])
+                                            }">
                                         </i>
                                         <form-tips :type="type" :property="property" :render="renderTips"></form-tips>
                                     </div>
@@ -39,6 +42,7 @@
                                                 v-validate="getValidateRules(property)"
                                                 v-model.trim="values[property['bk_property_id']]">
                                             </component>
+                                            <form-append :type="type" :property="property" :render="renderAppend"></form-append>
                                             <span class="form-error"
                                                 :title="errors.first(property['bk_property_id'])">
                                                 {{errors.first(property['bk_property_id'])}}
@@ -77,10 +81,12 @@
     import formMixins from '@/mixins/form'
     import RESIZE_EVENTS from '@/utils/resize-events'
     import FormTips from './form-tips.js'
+    import FormAppend from './form-append.js'
     export default {
         name: 'cmdb-form',
         components: {
-            FormTips
+            FormTips,
+            FormAppend
         },
         mixins: [formMixins],
         props: {
@@ -109,6 +115,7 @@
                 default: null
             },
             renderTips: Function,
+            renderAppend: Function,
             flexProperties: {
                 type: Array,
                 default: () => []
@@ -326,11 +333,15 @@
             .property-value {
                 font-size: 0;
                 position: relative;
+                display: flex;
                 /deep/ .control-append-group {
                     .bk-input-text {
                         flex: 1;
                     }
                 }
+            }
+            .form-component {
+                flex: 1;
             }
 
             &.flex {

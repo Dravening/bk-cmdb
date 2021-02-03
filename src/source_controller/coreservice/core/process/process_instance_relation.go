@@ -18,23 +18,49 @@ import (
 	"configcenter/src/common/errors"
 	"configcenter/src/common/http/rest"
 	"configcenter/src/common/metadata"
-	"configcenter/src/common/util"
 	"configcenter/src/storage/driver/mongodb"
 )
 
 func (p *processOperation) CreateProcessInstanceRelation(kit *rest.Kit, relation *metadata.ProcessInstanceRelation) (*metadata.ProcessInstanceRelation, errors.CCErrorCoder) {
+	if err := p.validateRelation(kit, relation); err != nil {
+		return nil, err
+	}
+	relation.SupplierAccount = kit.SupplierAccount
+	if err := mongodb.Client().Table(common.BKTableNameProcessInstanceRelation).Insert(kit.Ctx, relation); nil != err {
+		blog.Errorf("CreateProcessInstanceRelation failed, mongodb failed, table: %s, relation: %+v, err: %+v, rid: %s", common.BKTableNameProcessInstanceRelation, relation, err, kit.Rid)
+		return nil, kit.CCError.CCErrorf(common.CCErrCommDBInsertFailed)
+	}
+	return relation, nil
+}
+
+func (p *processOperation) CreateProcessInstanceRelations(kit *rest.Kit, relations []*metadata.ProcessInstanceRelation) ([]*metadata.ProcessInstanceRelation, errors.CCErrorCoder) {
+	for _, relation := range relations {
+		if err := p.validateRelation(kit, relation); err != nil {
+			return nil, err
+		}
+		relation.SupplierAccount = kit.SupplierAccount
+	}
+
+	if err := mongodb.Client().Table(common.BKTableNameProcessInstanceRelation).Insert(kit.Ctx, relations); nil != err {
+		blog.Errorf("CreateProcessInstanceRelation failed, mongodb failed, table: %s, relations: %+v, err: %+v, rid: %s", common.BKTableNameProcessInstanceRelation, relations, err, kit.Rid)
+		return nil, kit.CCError.CCErrorf(common.CCErrCommDBInsertFailed)
+	}
+	return relations, nil
+}
+
+func (p *processOperation) validateRelation(kit *rest.Kit, relation *metadata.ProcessInstanceRelation) errors.CCErrorCoder {
 	// base attribute validate
 	if field, err := relation.Validate(); err != nil {
 		blog.Errorf("CreateProcessInstanceRelation failed, validation failed, code: %d, err: %+v, rid: %s", common.CCErrCommParamsInvalid, err, kit.Rid)
 		err := kit.CCError.CCErrorf(common.CCErrCommParamsInvalid, field)
-		return nil, err
+		return err
 	}
 
 	var bizID int64
 	var err error
 	if bizID, err = p.validateBizID(kit, relation.BizID); err != nil {
 		blog.Errorf("CreateProcessInstanceRelation failed, validation failed, code: %d, err: %+v, rid: %s", common.CCErrCommParamsInvalid, err, kit.Rid)
-		return nil, kit.CCError.CCErrorf(common.CCErrCommParamsInvalid, common.BKAppIDField)
+		return kit.CCError.CCErrorf(common.CCErrCommParamsInvalid, common.BKAppIDField)
 	}
 
 	relation.BizID = bizID
@@ -43,16 +69,11 @@ func (p *processOperation) CreateProcessInstanceRelation(kit *rest.Kit, relation
 	_, err = p.GetServiceInstance(kit, relation.ServiceInstanceID)
 	if err != nil {
 		blog.Errorf("CreateProcessInstanceRelation failed, service instance id invalid, code: %d, err: %+v, rid: %s", common.CCErrCommParamsInvalid, err, kit.Rid)
-		return nil, kit.CCError.CCErrorf(common.CCErrCommParamsInvalid, "service_instance_id")
+		return kit.CCError.CCErrorf(common.CCErrCommParamsInvalid, "service_instance_id")
 	}
 	// TODO: asset bizID == category.BizID
 
-	relation.SupplierAccount = kit.SupplierAccount
-	if err := mongodb.Client().Table(common.BKTableNameProcessInstanceRelation).Insert(kit.Ctx, &relation); nil != err {
-		blog.Errorf("CreateProcessInstanceRelation failed, mongodb failed, table: %s, relation: %+v, err: %+v, rid: %s", common.BKTableNameProcessInstanceRelation, relation, err, kit.Rid)
-		return nil, kit.CCError.CCErrorf(common.CCErrCommDBInsertFailed)
-	}
-	return relation, nil
+	return nil
 }
 
 func (p *processOperation) GetProcessInstanceRelation(kit *rest.Kit, processInstanceID int64) (*metadata.ProcessInstanceRelation, errors.CCErrorCoder) {
@@ -142,33 +163,6 @@ func (p *processOperation) ListProcessInstanceRelation(kit *rest.Kit, option met
 		Info:  relations,
 	}
 	return result, nil
-}
-
-func (p *processOperation) ListHostProcessRelation(kit *rest.Kit, option *metadata.ListProcessInstancesWithHostOption) (*metadata.MultipleHostProcessRelation, errors.CCErrorCoder) {
-	filter := map[string]interface{}{
-		common.BKAppIDField: option.BizID,
-	}
-	if option.HostIDs != nil && len(option.HostIDs) > 0 {
-		filter[common.BKHostIDField] = map[string]interface{}{
-			common.BKDBIN: option.HostIDs,
-		}
-	}
-	filter = util.SetQueryOwner(filter, kit.SupplierAccount)
-	count, err := mongodb.Client().Table(common.BKTableNameProcessInstanceRelation).Find(filter).Count(kit.Ctx)
-	if err != nil {
-		blog.ErrorJSON("ListHostProcessRelation count mongodb failed, table: %s, filter: %s, err: %s, rid: %s", common.BKTableNameProcessInstanceRelation, filter, err, kit.Rid)
-		return nil, kit.CCError.CCErrorf(common.CCErrCommDBSelectFailed)
-	}
-	relations := make([]metadata.HostProcessRelation, 0)
-	if err := mongodb.Client().Table(common.BKTableNameProcessInstanceRelation).Find(filter).Start(
-		uint64(option.Page.Start)).Limit(uint64(option.Page.Limit)).Sort(option.Page.Sort).All(kit.Ctx, &relations); err != nil {
-		blog.ErrorJSON("ListHostProcessRelation select mongodb failed, table: %s, filter: %s, err: %s, rid: %s", common.BKTableNameProcessInstanceRelation, filter, err, kit.Rid)
-		return nil, kit.CCError.CCErrorf(common.CCErrCommDBSelectFailed)
-	}
-	return &metadata.MultipleHostProcessRelation{
-		Count: count,
-		Info:  relations,
-	}, nil
 }
 
 func (p *processOperation) DeleteProcessInstanceRelation(kit *rest.Kit, option metadata.DeleteProcessInstanceRelationOption) errors.CCErrorCoder {
