@@ -208,6 +208,14 @@ const (
 	List   ActionType = "list"
 )
 
+type SelectionMode string
+
+const (
+	All       SelectionMode = "all"
+	Attribute SelectionMode = "attribute"
+	Instance  SelectionMode = "instance"
+)
+
 type ActionID string
 
 const (
@@ -335,7 +343,7 @@ type RelateResourceType struct {
 	NameAlias          string                     `json:"name_alias"`
 	NameAliasEn        string                     `json:"name_alias_en"`
 	Scope              *Scope                     `json:"scope"`
-	SelectionMode      string                     `json:"selection_mode"`
+	SelectionMode      SelectionMode              `json:"selection_mode"`
 	InstanceSelections []RelatedInstanceSelection `json:"related_instance_selections"`
 }
 

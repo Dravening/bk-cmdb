@@ -452,6 +452,16 @@ type ListHostResult struct {
 	Info  []map[string]interface{} `json:"info"`
 }
 
+type ListHostAttrValueRequest struct {
+	Filter     mapstr.MapStr `json:"filter, omitempty"`
+	PropertyID string        `json:"bk_property_id"`
+}
+
+type ListHostAttrValueResult struct {
+	Count int      `json:"count"`
+	Info  []string `json:"info"`
+}
+
 type HostTopoResult struct {
 	Count int        `json:"count"`
 	Info  []HostTopo `json:"info"`

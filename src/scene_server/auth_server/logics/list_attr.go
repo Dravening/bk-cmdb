@@ -89,6 +89,12 @@ func (lgc *Logics) ListAttr(kit *rest.Kit, resourceType iam.TypeID) ([]types.Att
 		}
 	}
 
+	res.Data.Info = append(res.Data.Info, metadata.Attribute{
+		ObjectID:     "host",
+		PropertyID:   "iam_auth_str",
+		PropertyName: "权限中心鉴权短字符",
+	})
+
 	for _, attr := range res.Data.Info {
 		displayName := attr.PropertyName
 		if resourceType == iam.SysInstance {

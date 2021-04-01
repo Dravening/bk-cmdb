@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -31,8 +32,19 @@ func (cc *ConfCenter) checkFile(confFilePath string) error {
 	split := strings.Split(file, ".")
 	fileName := split[0]
 	v := viper.New()
-	v.SetConfigName(fileName)
-	v.AddConfigPath(path.Dir(confFilePath))
+
+	if runtime.GOOS == "windows" {
+		nameWithPointList := strings.Split(file, `\`)
+		nameWithPoint := nameWithPointList[len(nameWithPointList)-1]
+		name := strings.Split(nameWithPoint, ".")[0]
+		filePath := strings.TrimSuffix(confFilePath, nameWithPoint)
+		v.SetConfigName(name)
+		v.AddConfigPath(filePath)
+	} else {
+		v.SetConfigName(fileName)
+		v.AddConfigPath(path.Dir(confFilePath))
+	}
+
 	err := v.ReadInConfig()
 	if err != nil {
 		blog.Errorf("fail to read configure from %s ", file)
@@ -78,19 +90,19 @@ func (cc *ConfCenter) checkFile(confFilePath string) error {
 	return nil
 }
 
-func (cc *ConfCenter) isRedisConfigOK(prefix, fileName string, v *viper.Viper)  error {
+func (cc *ConfCenter) isRedisConfigOK(prefix, fileName string, v *viper.Viper) error {
 	if err := cc.isConfigEmpty(prefix+".host", fileName, v); err != nil {
 		return err
 	}
 	if err := cc.isConfigNotIntVal(prefix+".database", fileName, v); err != nil {
 		return err
 	}
-	if v.IsSet(prefix+".maxOpenConns") {
-		if err :=cc.isConfigNotIntVal(prefix+".maxOpenConns", fileName, v); err != nil {
+	if v.IsSet(prefix + ".maxOpenConns") {
+		if err := cc.isConfigNotIntVal(prefix+".maxOpenConns", fileName, v); err != nil {
 			return err
 		}
 	}
-	if v.IsSet(prefix+".maxIDleConns") {
+	if v.IsSet(prefix + ".maxIDleConns") {
 		if err := cc.isConfigNotIntVal(prefix+".maxIDleConns", fileName, v); err != nil {
 			return err
 		}
@@ -144,7 +156,7 @@ func (cc *ConfCenter) isEsConfigOK(v *viper.Viper, fileName string) error {
 
 func (cc *ConfCenter) isDatacollectionConfigOK(v *viper.Viper, fileName string) error {
 	if v.IsSet("datacollection.hostsnap.changeRangePercent") {
-		if err:= cc.isConfigNotIntVal("datacollection.hostsnap.changeRangePercent", fileName, v); err != nil {
+		if err := cc.isConfigNotIntVal("datacollection.hostsnap.changeRangePercent", fileName, v); err != nil {
 			return err
 		}
 	}
@@ -189,7 +201,7 @@ func (cc *ConfCenter) isOperationConfigOK(v *viper.Viper, fileName string) error
 
 func (cc *ConfCenter) isTimeFormat(configName, fileName string, v *viper.Viper) error {
 	atTime := v.GetString(configName)
-	timeVal := strings.Split(atTime,":")
+	timeVal := strings.Split(atTime, ":")
 	if len(timeVal) != 2 {
 		blog.Errorf("The configuration file is %s, the format of %s is wrong !", fileName, configName)
 		return fmt.Errorf("The configuration file is %s, the format of %s is wrong !", fileName, configName)

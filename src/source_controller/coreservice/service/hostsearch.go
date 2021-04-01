@@ -33,3 +33,18 @@ func (s *coreService) ListHosts(ctx *rest.Contexts) {
 	}
 	ctx.RespEntity(hosts)
 }
+
+func (s *coreService) ListHostsAttributeValues(ctx *rest.Contexts) {
+	inputData := meta.ListHostAttrValueRequest{}
+	if err := ctx.DecodeInto(&inputData); err != nil {
+		ctx.RespAutoError(err)
+		return
+	}
+	hosts, err := s.core.HostOperation().GetDistinctHostAttributeValues(ctx.Kit, inputData.Filter, inputData.PropertyID)
+	if err != nil {
+		blog.Errorf("get distinct host attribute values failed, err: %s, rid: %s", err.Error(), ctx.Kit.Rid)
+		ctx.RespAutoError(err)
+		return
+	}
+	ctx.RespEntity(hosts)
+}

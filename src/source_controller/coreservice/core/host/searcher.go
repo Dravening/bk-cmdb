@@ -14,9 +14,14 @@ package host
 
 import (
 	"configcenter/src/common/http/rest"
+	"configcenter/src/common/mapstr"
 	"configcenter/src/common/metadata"
 )
 
 func (hm *hostManager) ListHosts(kit *rest.Kit, input metadata.ListHosts) (*metadata.ListHostResult, error) {
 	return hm.hostSearcher.ListHosts(kit.Ctx, input)
+}
+
+func (hm *hostManager) GetDistinctHostAttributeValues(kit *rest.Kit, filter mapstr.MapStr, attribute string) (*metadata.ListHostAttrValueResult, error) {
+	return hm.hostSearcher.ListHostAttributeDistinctValues(kit.Ctx, filter, attribute)
 }

@@ -13,6 +13,7 @@
 package logics
 
 import (
+	"fmt"
 	"strings"
 
 	"configcenter/src/ac/iam"
@@ -20,6 +21,7 @@ import (
 	"configcenter/src/common/blog"
 	"configcenter/src/common/http/rest"
 	"configcenter/src/common/json"
+	"configcenter/src/common/mapstr"
 	"configcenter/src/common/metadata"
 	"configcenter/src/scene_server/auth_server/types"
 )
@@ -37,8 +39,7 @@ func (lgc *Logics) ListAttrValue(kit *rest.Kit, resourceType iam.TypeID, filter 
 
 	param := metadata.QueryCondition{
 		Condition: map[string]interface{}{
-			common.BKPropertyIDField:   filter.Attr,
-			common.BKPropertyTypeField: common.FieldTypeEnum,
+			common.BKPropertyIDField: filter.Attr,
 		},
 		Fields: []string{common.BKPropertyTypeField, common.BKOptionField},
 		Page:   metadata.BasePage{Limit: common.BKNoLimit},
@@ -66,55 +67,119 @@ func (lgc *Logics) ListAttrValue(kit *rest.Kit, resourceType iam.TypeID, filter 
 
 	attr := res.Data.Info[0]
 	attrType = attr.PropertyType
-	if attrType != common.FieldTypeEnum {
+	if (attrType != common.FieldTypeEnum) && (attrType != common.FieldTypeSingleChar) {
+		blog.Errorf("attribute type is %s, which should be Enum or SingleChar", attrType)
 		return &types.ListAttrValueResult{Count: 0, Results: []types.AttrValueResource{}}, nil
 	}
+	switch attrType {
+	case common.FieldTypeSingleChar:
+		// in this case, we need to search instances to get attribute value.
+		//todo: 这里的分页查询非常不好处理，目前进行了无索引全表查询。
+		query := &metadata.QueryInput{
+			Condition: mapstr.MapStr{
+				filter.Attr: map[string]interface{}{
+					common.BKDBLIKE: fmt.Sprintf(".*%s.*", filter.Keyword),
+				},
+			},
+			Fields: filter.Attr,
+			Start:  0,
+			Limit:  common.BKNoLimit,
+		}
+		var err error
+		var count int64
+		attrValueList := []types.AttrValueResource{}
 
-	marshaledOptions, err := json.Marshal(attr.Option)
-	if err != nil {
-		blog.ErrorJSON("marshal model attribute option failed, error: %s, option: %v, rid: %s", err.Error(), attr.Option, kit.Rid)
-		return nil, err
-	}
-	options := metadata.AttributesOptions{}
-	err = json.Unmarshal(marshaledOptions, &options)
-	if err != nil {
-		blog.Errorf("attribute option %s is invalid, rid: %s", marshaledOptions, kit.Rid)
-		return nil, kit.CCError.CCErrorf(common.CCErrCommParamsIsInvalid, "option")
-	}
-
-	// filter options by keyword and ids and pagination
-	values := make([]types.AttrValueResource, 0)
-	start := page.Offset
-	if start >= int64(len(options)) {
-		return &types.ListAttrValueResult{Count: 0, Results: []types.AttrValueResource{}}, nil
-	}
-	var count int64 = 0
-	var idMap map[interface{}]bool
-	if idLen := len(filter.IDs); idLen > 0 {
-		idMap = make(map[interface{}]bool, idLen)
-		for _, id := range filter.IDs {
-			idMap[id] = true
+		// Take certain attribute as the key to get the attribute values of all host instances.
+		result, err := lgc.CoreAPI.CoreService().Host().GetHosts(kit.Ctx, kit.Header, query)
+		if err != nil {
+			blog.Errorf("GetHostInfoByConds GetHosts http do error, err:%s, input:%+v,rid:%s", err.Error(), query, kit.Rid)
+			return nil, kit.CCError.CCError(common.CCErrCommHTTPDoRequestFailed)
 		}
-	}
-	for _, option := range options[start:] {
-		if count == page.Limit {
-			break
+		if err := result.CCError(); err != nil {
+			blog.Errorf("GetHostInfoByConds GetHosts http response error, err code:%d, err msg:%s,input:%+v,rid:%s", result.Code, result.ErrMsg, query, kit.Rid)
+			return nil, err
 		}
-		if idMap != nil && !idMap[option.ID] {
-			continue
+		if len(result.Data.Info) == 0 {
+			return &types.ListAttrValueResult{Count: 0, Results: []types.AttrValueResource{}}, nil
 		}
-		if filter.Keyword != "" {
-			if !strings.Contains(option.ID, filter.Keyword) && !strings.Contains(option.Name, filter.Keyword) {
+		for _, attrMap := range result.Data.Info {
+			if (attrMap[filter.Attr] == nil) || (attrMap[filter.Attr] == "") {
+				break
+			}
+			attrValue, ok := attrMap[filter.Attr].(string)
+			if !ok {
+				blog.Errorf("cast attribute value type from interface{} to string failed, attribute:%+v , rid: %s", attrMap[filter.Attr], kit.Rid)
+				break
+			}
+			// check duplicate
+			flag := true
+			for _, value := range attrValueList {
+				if value.DisplayName == attrValue {
+					flag = false
+					break
+				}
+			}
+			if !flag {
 				continue
 			}
+			count = count + 1
+			attrValueList = append(attrValueList, types.AttrValueResource{
+				ID:          count,
+				DisplayName: attrValue,
+			})
 		}
-		values = append(values, types.AttrValueResource{
-			ID:          option.ID,
-			DisplayName: option.Name,
-		})
-		count++
+		return &types.ListAttrValueResult{Count: count, Results: attrValueList}, nil
+
+	case common.FieldTypeEnum:
+		//in this case, we had already got the attribute values from collection cc_ObjAttDes. just need to unmarshal it.
+		marshaledOptions, err := json.Marshal(attr.Option)
+		if err != nil {
+			blog.ErrorJSON("marshal model attribute option failed, error: %s, option: %v, rid: %s", err.Error(), attr.Option, kit.Rid)
+			return nil, err
+		}
+		options := metadata.AttributesOptions{}
+		err = json.Unmarshal(marshaledOptions, &options)
+		if err != nil {
+			blog.Errorf("attribute option %s is invalid, rid: %s", marshaledOptions, kit.Rid)
+			return nil, kit.CCError.CCErrorf(common.CCErrCommParamsIsInvalid, "option")
+		}
+
+		// filter options by keyword and ids and pagination
+		values := make([]types.AttrValueResource, 0)
+		start := page.Offset
+		if start >= int64(len(options)) {
+			return &types.ListAttrValueResult{Count: 0, Results: []types.AttrValueResource{}}, nil
+		}
+		var count int64 = 0
+		var idMap map[interface{}]bool
+		if idLen := len(filter.IDs); idLen > 0 {
+			idMap = make(map[interface{}]bool, idLen)
+			for _, id := range filter.IDs {
+				idMap[id] = true
+			}
+		}
+		for _, option := range options[start:] {
+			if count == page.Limit {
+				break
+			}
+			if idMap != nil && !idMap[option.ID] {
+				continue
+			}
+			if filter.Keyword != "" {
+				if !strings.Contains(option.ID, filter.Keyword) && !strings.Contains(option.Name, filter.Keyword) {
+					continue
+				}
+			}
+			values = append(values, types.AttrValueResource{
+				ID:          option.ID,
+				DisplayName: option.Name,
+			})
+			count++
+		}
+		blog.Errorf("listAttrValueResult: %+v", types.ListAttrValueResult{Count: int64(len(options)), Results: values})
+		return &types.ListAttrValueResult{Count: int64(len(options)), Results: values}, nil
 	}
-	return &types.ListAttrValueResult{Count: int64(len(options)), Results: values}, nil
+	return &types.ListAttrValueResult{Count: 0, Results: []types.AttrValueResource{}}, nil
 }
 
 func (lgc *Logics) ValidateListAttrValueRequest(kit *rest.Kit, req *types.PullResourceReq) (*types.ListAttrValueFilter, error) {

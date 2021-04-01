@@ -158,6 +158,9 @@ type HostOperation interface {
 	// host search
 	ListHosts(kit *rest.Kit, input metadata.ListHosts) (*metadata.ListHostResult, error)
 
+	// get all host instances
+	GetDistinctHostAttributeValues(kit *rest.Kit, filter mapstr.MapStr, attribute string) (*metadata.ListHostAttrValueResult, error)
+
 	// GetDistinctHostIDsByTopoRelation get all  host ids by topology relation condition
 	GetDistinctHostIDsByTopoRelation(kit *rest.Kit, input *metadata.DistinctHostIDByTopoRelationRequest) ([]int64, error)
 

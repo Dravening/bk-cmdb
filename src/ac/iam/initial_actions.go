@@ -86,6 +86,7 @@ func genBusinessHostActions() []ResourceAction {
 		NameAlias:          "",
 		NameAliasEn:        "",
 		Scope:              nil,
+		SelectionMode:      All,
 		InstanceSelections: hostSelection,
 	}}
 
@@ -446,6 +447,7 @@ func genResourcePoolHostActions() []ResourceAction {
 		NameAlias:          "",
 		NameAliasEn:        "",
 		Scope:              nil,
+		SelectionMode:      All,
 		InstanceSelections: hostSelection,
 	}}
 
